@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Svelte Widget Test</title>
+</head>
+<body>
+  <h1>Svelte Widget Demo</h1>
+  <!-- Use the custom element -->
+  <svelte-widget id="my-widget"></svelte-widget>
+
+  <div id="output"></div>
+
+  <script type="module">
+    // Import the compiled web component
+    import '/dist/SvelteWidget.js';
+
+    // Listen for custom events from the widget
+    const widget = document.getElementById('my-widget');
+    widget.addEventListener('message', (e) => {
+      document.getElementById('output').textContent =
+        'Widget data: ' + JSON.stringify(e.detail.widgetData);
+    });
+  </script>
+</body>
+</html>
