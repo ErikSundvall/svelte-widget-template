@@ -3,9 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <title>Svelte Widget Demo</title>
+  <style>
+    svelte-widget {
+      display: block;
+      border: 1px solid blue;
+      padding: 1em;
+      margin-block: 1em; /* Adds space above and below */
+    }
+  </style>
 </head>
 <body>
-  <h1>Svelte Widget Demo , intended for Better EHR Studio and form renderer</h1>
+  <h1>Svelte Widget Demo</h1>
+  <p>tests/uses a widget intended for Better EHR Studio and form renderer</p>
   <!-- Use the custom element -->
   <svelte-widget id="my-widget"></svelte-widget>
 
@@ -14,6 +23,12 @@
     <label>
       <input type="checkbox" id="toggle-button" checked>
       Show "reset" button inside widget
+    </label>
+  </div>
+  <div>
+    <label>
+      <input type="checkbox" id="toggle-debug" checked>
+      Show debug info inside widget
     </label>
   </div>
   <div>
@@ -45,10 +60,19 @@
     const toggleButtonCheckbox = document.getElementById('toggle-button');
     toggleButtonCheckbox.addEventListener('change', (e) => {
       // The config prop is an object. We need to set the whole object.
-      widget.config = { showButton: e.target.checked };
+      // By spreading the existing config, we preserve other properties.
+      widget.config = { ...widget.config, showButton: e.target.checked };
     });
 
+    const toggleDebugCheckbox = document.getElementById('toggle-debug');
+    toggleDebugCheckbox.addEventListener('change', (e) => {
+      // Read the existing config, modify one property, and set it back.
+      widget.config = { ...widget.config, showDebug: e.target.checked };
+    });
+
+
     const inputDataField = document.getElementById('input-data');
+    
     const setDataButton = document.getElementById('set-data');
     setDataButton.addEventListener('click', () => {
       widget.useDefaultData = false; // This will make the widget use inputData

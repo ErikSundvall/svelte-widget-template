@@ -2,7 +2,7 @@
 <script>
     import { onMount } from 'svelte';
 
-    export let config = {showButton: true}
+    export let config = {showButton: true, showDebug: true}
     export let inputData
     export let useDefaultData = true
     export const descriptor = {
@@ -14,7 +14,14 @@
                 type: 'boolean',
                 defaultValue: true,
                 metadata: {
-                    title: 'Shows the button on a widget or not'
+                    title: 'Shows the button on a widget (or not)'
+                }
+            },
+             showDebug: {
+                type: 'boolean',
+                defaultValue: true,
+                metadata: {
+                    title: 'Shows the debug information inside the widget (or not)'
                 }
             }
         }
@@ -22,7 +29,7 @@
     let widgetData
     let hostElement;
 
-    $: initWidgetData(useDefaultData !== false ? 500 : inputData)
+    $: initWidgetData(useDefaultData !== false ? "This is a default value" : inputData)
 
     function initWidgetData(data) {
         widgetData = data
@@ -60,7 +67,7 @@
 
 
 {#if config && config.showButton === true}
-    <button on:click={() => initWidgetData(500)}> reset input data to 500</button>
+    <button on:click={() => initWidgetData("Input looks like this after reset")}> reset input data to 500</button>
 {/if}
 this is a widget template. <br>
 here you see basic input that also outputs data:
@@ -68,7 +75,7 @@ here you see basic input that also outputs data:
 
 <button on:click={emitWidgetData}>emit data</button>
 <button on:click={reverseAndEmit}>Reverse and Emit</button>
-
+{#if config && config.showDebug === true}
 <h1>Debug information (inside widget)</h1>
 <ul>
     <li>widget data: {widgetData}</li>
@@ -80,4 +87,5 @@ here you see basic input that also outputs data:
     <li>useDefaultData as JSON: {JSON.stringify(useDefaultData)}</li>
     <li>config as JSON: {JSON.stringify(config)}</li>
 </ul>
+{/if}
 </div>
