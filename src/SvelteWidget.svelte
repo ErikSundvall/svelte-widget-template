@@ -1,5 +1,6 @@
+<svelte:options tag="svelte-widget"/>
 <script>
-    import {createEventDispatcher} from 'svelte';
+    import { onMount } from 'svelte';
 
     export let config = {showButton: true}
     export let inputData
@@ -18,28 +19,65 @@
             }
         }
     };
-    const outputData = createEventDispatcher();
     let widgetData
+    let hostElement;
 
     $: initWidgetData(useDefaultData !== false ? 500 : inputData)
-    $: emitWidgetData(widgetData)
 
     function initWidgetData(data) {
-        console.error("happens")
         widgetData = data
     }
 
+    onMount(() => {
+        // When the component is first mounted, emit the initial data.
+        // This is done in onMount to ensure the hostElement is bound and
+        // the event listener on the host page has had a chance to be attached.
+        emitWidgetData();
+    });
+
     function emitWidgetData() {
-        outputData('message', {widgetData});
+        if (!hostElement) return;
+        // Dispatch a standard DOM CustomEvent that can bubble up and cross the shadow DOM boundary.
+        hostElement.dispatchEvent(new CustomEvent('message', {
+            detail: { widgetData },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+
+    function reverseAndEmit() {
+        // Ensure widgetData is treated as a string for reversal
+        const stringValue = String(widgetData);
+        // Reverse the string and update widgetData.
+        widgetData = stringValue.split('').reverse().join('');
+        // Explicitly emit the change
+        emitWidgetData();
     }
 
 </script>
 
-<svelte:options tag="svelte-widget"/>
+<div bind:this={hostElement}>
+
 
 {#if config && config.showButton === true}
     <button on:click={() => initWidgetData(500)}> reset input data to 500</button>
 {/if}
 this is a widget template. <br>
 here you see basic input that also outputs data:
-<input bind:value={widgetData}/>
+<input bind:value={widgetData}/> <br>
+
+<button on:click={emitWidgetData}>emit data</button>
+<button on:click={reverseAndEmit}>Reverse and Emit</button>
+
+<h1>Debug information (inside widget)</h1>
+<ul>
+    <li>widget data: {widgetData}</li>
+    <li>input data: {inputData}</li>
+    <li>use default data: {useDefaultData}</li>
+    <li>descriptor as JSON: {JSON.stringify(descriptor)}</li>
+    <li>widgetData as JSON: {JSON.stringify(widgetData)}</li>
+    <li>inputData as JSON: {JSON.stringify(inputData)}</li>
+    <li>useDefaultData as JSON: {JSON.stringify(useDefaultData)}</li>
+    <li>config as JSON: {JSON.stringify(config)}</li>
+</ul>
+</div>
