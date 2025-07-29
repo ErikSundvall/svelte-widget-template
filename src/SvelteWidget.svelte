@@ -73,8 +73,8 @@ this is a widget template. <br>
 here you see basic input that also outputs data:
 <input bind:value={widgetData}/> <br>
 
-<button on:click={emitWidgetData}>emit data</button>
-<button on:click={reverseAndEmit}>Reverse and Emit</button>
+<button on:click={emitWidgetData}>Emit data</button>
+<button on:click={reverseAndEmit}>Reverse and then emit data</button>
 {#if config && config.showDebug === true}
 <h1>Debug information (inside widget)</h1>
 <ul>

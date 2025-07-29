@@ -14,7 +14,8 @@
 </head>
 <body>
   <h1>Svelte Widget Demo</h1>
-  <p>tests/uses a widget intended for Better EHR Studio and form renderer</p>
+  <p>Simpe test webpage during development that insid the blue frame below uses a widget intended for Better EHR Studio and form renderer</p>
+ 
   <!-- Use the custom element -->
   <svelte-widget id="my-widget"></svelte-widget>
 
@@ -27,7 +28,7 @@
   </div>
   <div>
     <label>
-      <input type="checkbox" id="toggle-debug" checked>
+      <input type="checkbox" id="toggle-debug" checkd>
       Show debug info inside widget
     </label>
   </div>
@@ -40,7 +41,7 @@
   </div>
 
   <h1>Output</h1>
-  <p>This area will display messages (if any are available) from the widget:</p>
+  <p>This area will display messages (if any are available) emitted from the widget:</p>
   <div id="output"></div>
 
   <script type="module">
@@ -51,9 +52,8 @@
     const widget = document.getElementById('my-widget');
     widget.addEventListener('message', (e) => {
       document.getElementById('output').textContent =
-        'Widget data: ' + JSON.stringify(e.detail.widgetData) +
-        'event (e): ' + JSON.stringify(e);
-
+        'Widget data: ' + JSON.stringify(e.detail.widgetData) +'       '+
+        'Widget event (e): ' + JSON.stringify(e);
       });
 
     // Controls
