@@ -29,11 +29,7 @@
     let widgetData
     let hostElement;
 
-    $: initWidgetData(useDefaultData !== false ? "This is a default value" : inputData)
-
-    function initWidgetData(data) {
-        widgetData = data
-    }
+    $: widgetData = useDefaultData !== false ? "This is a default value" : inputData
 
     onMount(() => {
         // When the component is first mounted, emit the initial data.
@@ -65,27 +61,28 @@
 
 <div bind:this={hostElement}>
 
+This is a widget example. <br>
+here you see basic input that also outputs data:<br>
+<input bind:value={widgetData}> <br>
+
+<button on:click={emitWidgetData}>Emit data</button>
+<button on:click={reverseAndEmit}>Reverse and then emit data</button>
 
 {#if config && config.showButton === true}
     <button on:click={() => initWidgetData("Input looks like this after reset")}> reset input data to 500</button>
 {/if}
-this is a widget template. <br>
-here you see basic input that also outputs data:
-<input bind:value={widgetData}/> <br>
 
-<button on:click={emitWidgetData}>Emit data</button>
-<button on:click={reverseAndEmit}>Reverse and then emit data</button>
 {#if config && config.showDebug === true}
 <h1>Debug information (inside widget)</h1>
 <ul>
     <li>widget data: {widgetData}</li>
     <li>input data: {inputData}</li>
     <li>use default data: {useDefaultData}</li>
-    <li>descriptor as JSON: {JSON.stringify(descriptor)}</li>
     <li>widgetData as JSON: {JSON.stringify(widgetData)}</li>
     <li>inputData as JSON: {JSON.stringify(inputData)}</li>
     <li>useDefaultData as JSON: {JSON.stringify(useDefaultData)}</li>
-    <li>config as JSON: {JSON.stringify(config)}</li>
+    <li>config as JSON: <br><pre>{JSON.stringify(config, null, 2)}</pre></li>
+    <li>descriptor as JSON: <br><pre>{JSON.stringify(descriptor, null, 2)}</pre></li>
 </ul>
 {/if}
 </div>

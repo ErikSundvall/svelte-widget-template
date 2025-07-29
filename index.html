@@ -14,7 +14,7 @@
 </head>
 <body>
   <h1>Svelte Widget Demo</h1>
-  <p>Simpe test webpage during development that insid the blue frame below uses a widget intended for Better EHR Studio and form renderer</p>
+  <p>Simpe test webpage during development that inside the blue frame below uses a widget intended for Better EHR Studio and the associated Form Renderer</p>
  
   <!-- Use the custom element -->
   <svelte-widget id="my-widget"></svelte-widget>
@@ -28,7 +28,7 @@
   </div>
   <div>
     <label>
-      <input type="checkbox" id="toggle-debug" checkd>
+      <input type="checkbox" id="toggle-debug" checked>
       Show debug info inside widget
     </label>
   </div>
@@ -69,7 +69,6 @@
       // Read the existing config, modify one property, and set it back.
       widget.config = { ...widget.config, showDebug: e.target.checked };
     });
-
 
     const inputDataField = document.getElementById('input-data');
     
