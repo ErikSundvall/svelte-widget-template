@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Svelte Widget Demo</title>
   <style>
-    svelte-widget {
+    .bluebox {
       display: block;
       border: 1px solid blue;
       padding: 1em;
@@ -17,9 +17,9 @@
   <p>Simpe test webpage during development that inside the blue frame below uses a widget intended for Better EHR Studio and the associated Form Renderer</p>
  
   <!-- Use the custom element -->
-  <svelte-widget id="my-widget"></svelte-widget>
+  <svelte-widget id="my-widget" class="bluebox""></svelte-widget>
 
-  <h1>Controls</h1>
+  <h1>Controls (in test web page, not part of widget) </h1>
   <div>
     <label>
       <input type="checkbox" id="toggle-button" checked>
@@ -40,9 +40,9 @@
     <button id="set-data">Set Data</button>
   </div>
 
-  <h1>Output</h1>
+  <h1>Output  (in test web page, not part of widget)</h1>
   <p>This area will display messages (if any are available) emitted from the widget:</p>
-  <div id="output"></div>
+  <div id="output" class="bluebox""></div>
 
   <script type="module">
     // Import the compiled web component
@@ -52,7 +52,7 @@
     const widget = document.getElementById('my-widget');
     widget.addEventListener('message', (e) => {
       document.getElementById('output').textContent =
-        'Widget data: ' + JSON.stringify(e.detail.widgetData) +'       '+
+        'Widget data: ' + JSON.stringify(e.detail.outputData) +'       '+
         'Widget event (e): ' + JSON.stringify(e);
       });
 
