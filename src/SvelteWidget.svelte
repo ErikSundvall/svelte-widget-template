@@ -2,7 +2,7 @@
 <script>
     import { onMount } from 'svelte';
 
-    export let config = {showButton: true, showDebug: true}
+    export let config = {showButton: true, showDebug: false}
     export let inputData
     export let useDefaultData = true
     export const descriptor = {
@@ -14,12 +14,12 @@
                 type: 'boolean',
                 defaultValue: true,
                 metadata: {
-                    title: 'Shows the button on a widget (or not)'
+                    title: 'Shows the reset button on the widget (or not)'
                 }
             },
              showDebug: {
                 type: 'boolean',
-                defaultValue: true,
+                defaultValue: false,
                 metadata: {
                     title: 'Shows the debug information inside the widget (or not)'
                 }
@@ -69,7 +69,7 @@ Here you see input data that is also used as output data:<br>
 <button on:click={reverseAndEmit}>Reverse and then emit data</button>
 
 {#if config && config.showButton === true}
-    <button on:click={() => initWidgetData("Input looks like this after reset")}> reset input data to 500</button>
+    <button on:click={() => {outputData="Testing 123"}}> Set input data to 'Testing 123'</button>
 {/if}
 
 {#if config && config.showDebug === true}
