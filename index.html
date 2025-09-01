@@ -52,7 +52,7 @@
     const widget = document.getElementById('my-widget');
     widget.addEventListener('message', (e) => {
       document.getElementById('output').textContent =
-        'Widget data: ' + JSON.stringify(e.detail.outputData) +'       '+
+        'Widget data: ' + JSON.stringify(e.detail) +'  ---  '+
         'Widget event (e): ' + JSON.stringify(e);
       });
 

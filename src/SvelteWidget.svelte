@@ -68,7 +68,7 @@
         if (!hostElement) return;
         // Dispatch a standard DOM CustomEvent that can bubble up and cross the shadow DOM boundary.
         hostElement.dispatchEvent(new CustomEvent('message', {
-            detail: { outputData: outputData },
+            detail: { inputData: outputData }, //Experiment: outputData is sent with teh name inputData to follow Better Wiget spec that says input and output schema is the same
             bubbles: true,
             composed: true,
         }));
