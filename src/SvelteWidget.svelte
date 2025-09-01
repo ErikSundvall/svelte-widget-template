@@ -2,9 +2,24 @@
 <script>
     import { onMount } from 'svelte';
 
+
     export let config = {showButton: true, showDebug: false}
+
+    /**
+     * Initial data for the widget.
+     * @type {string}
+     */
     export let inputData
+
+    /**
+     * Whether to use the default data or the inputData.
+     * @type {boolean}
+     */
     export let useDefaultData = true
+
+    /**
+     * Descriptor for the widget's properties and configuration.
+     */
     export const descriptor = {
         valueModel: {
             type: 'string',
@@ -26,7 +41,17 @@
             }
         }
     };
+
+    /**
+     * The data currently held by the widget, which can be modified by the user.
+     * @type {string}
+     */
     let outputData
+
+    /**
+     * The host element of the widget.
+     * @type {HTMLElement}
+     */
     let hostElement;
 
     $: outputData = useDefaultData !== false ? "This is a default value" : inputData
@@ -38,6 +63,7 @@
         emitOutputData();
     });
 
+
     function emitOutputData() {
         if (!hostElement) return;
         // Dispatch a standard DOM CustomEvent that can bubble up and cross the shadow DOM boundary.
@@ -47,6 +73,7 @@
             composed: true,
         }));
     }
+
 
     function reverseAndEmit() {
         // Ensure outputData is treated as a string for reversal
@@ -83,4 +110,3 @@ Here you see input data that is also used as output data:<br>
 </ul>
 {/if}
 </div>
-
