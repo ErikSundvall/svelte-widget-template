@@ -34,8 +34,8 @@
   </div>
   <div>
     <label>
-      Set inputData:
-      <input type="text" id="input-data" value="Hello from outside!">
+      Set data:
+      <input type="text" id="form-data" value="Hello from outside!">
     </label>
     <button id="set-data">Set Data</button>
   </div>
@@ -70,12 +70,12 @@
       widget.config = { ...widget.config, showDebug: e.target.checked };
     });
 
-    const inputDataField = document.getElementById('input-data');
+    const formDataField = document.getElementById('form-data');
     
     const setDataButton = document.getElementById('set-data');
     setDataButton.addEventListener('click', () => {
-      widget.useDefaultData = false; // This will make the widget use inputData
-      widget.inputData = inputDataField.value;
+      widget.useDefaultData = false; 
+      widget.widgetData = formDataField.value;
     });
   </script>
 </body>
