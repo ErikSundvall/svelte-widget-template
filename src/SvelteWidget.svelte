@@ -23,7 +23,7 @@
                 type: 'boolean',
                 defaultValue: true,
                 metadata: {
-                    title: 'Shows the reset button on the widget (or not)'
+                    title: 'Shows the (p)reset button on the widget (or not)'
                 }
             },
              showDebug: {
@@ -40,7 +40,7 @@
      * The data currently held by the widget, which can be modified by the user.
      * @type {string}
      */
-    export let widgetData //Does the naming here make a difference?
+    export let inputData //Does the naming here make a difference?
 
     /**
      * The host element of the widget.
@@ -48,21 +48,21 @@
      */
     let hostElement;
 
-    $: widgetData = useDefaultData !== false ? "This is a default value" : widgetData
+    $: inputData = useDefaultData !== false ? "This is a default value" : inputData
 
     onMount(() => {
         // When the component is first mounted, emit the initial data.
         // This is done in onMount to ensure the hostElement is bound and
         // the event listener on the host page has had a chance to be attached.
-        emitWidgetData();
+        emitData();
     });
 
 
-    function emitWidgetData() {
+    function emitData() {
         if (!hostElement) return;
         // Dispatch a standard DOM CustomEvent that can bubble up and cross the shadow DOM boundary.
         hostElement.dispatchEvent(new CustomEvent('message', {
-            detail: { widgetData: widgetData }, //Does the naming here make a difference?
+            detail: { inputData: inputData }, //Does the naming here make a difference?
             bubbles: true,
             composed: true,
         }));
@@ -70,12 +70,12 @@
 
 
     function reverseAndEmit() {
-        // Ensure widgetData is treated as a string for reversal
-        const stringValue = String(widgetData);
+        // Ensure inputData is treated as a string for reversal
+        const stringValue = String(inputData);
         // Reverse the string and update outputData.
-        widgetData = stringValue.split('').reverse().join('');
+        inputData = stringValue.split('').reverse().join('');
         // Explicitly emit the change
-        emitWidgetData();
+        emitData();
     }
 
 </script>
@@ -84,20 +84,20 @@
 
 This is a widget example. <br>
 Here you see input data that is also used as output data:<br>
-<input bind:value={widgetData}> <br>
+<input bind:value={inputData}> <br>
 
-<button on:click={emitWidgetData}>Emit data</button>
+<button on:click={emitData}>Emit data</button>
 <button on:click={reverseAndEmit}>Reverse and then emit data</button>
 
 {#if config && config.showButton === true}
-    <button on:click={() => {widgetData="Testing 123"}}> Set data to 'Testing 123'</button>
+    <button on:click={() => {inputData="Testing 123"}}> Set data to 'Testing 123'</button>
 {/if}
 
 {#if config && config.showDebug === true}
 <h1>Debug information (inside widget)</h1>
 <ul>
     <li>use default data: {useDefaultData}</li>
-    <li>widgetData as JSON: {JSON.stringify(widgetData)}</li>
+    <li>inputData as JSON: {JSON.stringify(inputData)}</li>
     <li>config as JSON: <br><pre>{JSON.stringify(config, null, 2)}</pre></li>
     <li>descriptor as JSON: <br><pre>{JSON.stringify(descriptor, null, 2)}</pre></li>
 </ul>

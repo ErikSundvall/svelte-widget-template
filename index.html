@@ -23,7 +23,7 @@
   <div>
     <label>
       <input type="checkbox" id="toggle-button" checked>
-      Show "reset" button inside widget
+      Show "(p)reset" button inside widget
     </label>
   </div>
   <div>
@@ -75,7 +75,7 @@
     const setDataButton = document.getElementById('set-data');
     setDataButton.addEventListener('click', () => {
       widget.useDefaultData = false; 
-      widget.widgetData = formDataField.value; 
+      widget.inputData = formDataField.value; 
     });
   </script>
 </body>
