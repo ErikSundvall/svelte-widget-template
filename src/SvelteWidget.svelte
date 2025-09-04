@@ -40,7 +40,7 @@
      * The data currently held by the widget, which can be modified by the user.
      * @type {string}
      */
-    export let widgetData
+    export let widgetData //Does the naming here make a difference?
 
     /**
      * The host element of the widget.
@@ -62,7 +62,7 @@
         if (!hostElement) return;
         // Dispatch a standard DOM CustomEvent that can bubble up and cross the shadow DOM boundary.
         hostElement.dispatchEvent(new CustomEvent('message', {
-            detail: { outputData: widgetData }, 
+            detail: { widgetData: widgetData }, //Does the naming here make a difference?
             bubbles: true,
             composed: true,
         }));
