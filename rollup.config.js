@@ -30,7 +30,7 @@ function serve() {
 	};
 }
 
-export default {
+export default [{
 	input: 'src/main.ts',
 	output: {
 		sourcemap: true,
@@ -81,4 +81,42 @@ export default {
 	watch: {
 		clearScreen: false
 	}
-};
+}, {
+	input: 'src/main2.ts',
+	output: {
+		sourcemap: true,
+		format: 'iife',
+		name: 'app2',
+		file: 'dist/TextgenWidgetAlpha1.js'
+	},
+	plugins: [
+		svelte({
+			preprocess: sveltePreprocess({ sourceMap: !production }),
+			compilerOptions: {
+				customElement: true,
+				// enable run-time checks when not in production
+				dev: !production
+			}
+		}),
+		// we'll extract any component CSS out into
+		// a separate file - better for performance
+		css({ output: 'bundle2.css' }),
+
+		resolve({
+			browser: true,
+			dedupe: ['svelte']
+		}),
+		commonjs(),
+		typescript({
+			sourceMap: !production,
+			inlineSources: !production
+		}),
+
+		// If we're building for production (npm run build
+		// instead of npm run dev), minify
+		production && terser()
+	],
+	watch: {
+		clearScreen: false
+	}
+}];

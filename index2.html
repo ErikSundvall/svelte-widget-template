@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TextGen Widget Demo</title>
+  <style>
+    .bluebox {
+      display: block;
+      border: 1px solid blue;
+      padding: 1em;
+      margin-block: 1em; /* Adds space above and below */
+    }
+  </style>
+</head>
+<body>
+  <h1>TextGen Widget Demo</h1>
+  <p>Simpe test webpage during development that inside the blue frame below uses a widget intended for Better EHR Studio and the associated Form Renderer</p>
+ 
+  <!-- Use the custom element -->
+  <textgen-widget-alpha-1 id="my-widget" class="bluebox""></textgen-widget-alpha-1>
+
+  <h1>Controls (in test web page, not part of widget) </h1>
+  <div>
+    <label>
+      <input type="checkbox" id="toggle-button" checked>
+      Show "tree" inside widget
+    </label>
+  </div>
+  <div>
+    <label>
+      <input type="checkbox" id="toggle-debug">
+      Show debug info inside widget
+    </label>
+  </div>
+  <div>
+    <label>
+      Set data:
+      <input type="text" id="form-data" value="Hello from outside!">
+    </label>
+    <button id="set-data">Set Data</button>
+  </div>
+
+  <h1>Output  (in test web page, not part of widget)</h1>
+  <p>This area will display messages (if any are available) emitted from the widget:</p>
+  <div id="output" class="bluebox""></div>
+
+  <script type="module">
+    // Import the compiled web component
+    import '/dist/TextGenWidgetAlpha1.js';
+
+    // Listen for custom events from the widget
+    const widget = document.getElementById('my-widget');
+    widget.addEventListener('message', (e) => {
+      document.getElementById('output').textContent =
+        'Widget data: ' + JSON.stringify(e.detail) +'  ---  '+
+        'Widget event (e): ' + JSON.stringify(e);
+      });
+
+    // Controls
+    const toggleButtonCheckbox = document.getElementById('toggle-button');
+    toggleButtonCheckbox.addEventListener('change', (e) => {
+      // The config prop is an object. We need to set the whole object.
+      // By spreading the existing config, we preserve other properties.
+      widget.config = { ...widget.config, showButton: e.target.checked };
+    });
+
+    const toggleDebugCheckbox = document.getElementById('toggle-debug');
+    toggleDebugCheckbox.addEventListener('change', (e) => {
+      // Read the existing config, modify one property, and set it back.
+      widget.config = { ...widget.config, showDebug: e.target.checked };
+    });
+
+    const formDataField = document.getElementById('form-data');
+    
+    const setDataButton = document.getElementById('set-data');
+    setDataButton.addEventListener('click', () => {
+      widget.useDefaultData = false; 
+      widget.inputData = formDataField.value; 
+    });
+  </script>
+</body>
+</html>
