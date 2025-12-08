@@ -23,7 +23,7 @@
   <!-- Use the custom element -->
   <svelte-widget id="my-widget" class="bluebox"></svelte-widget>
 
-  <h1>Controls (in test web page, not part of widget) </h1>
+  <h2>Controls for Svelte Widget (in test web page, not part of widget) </h2>
   <div>
     <label>
       <input type="checkbox" id="toggle-button" checked>
@@ -44,16 +44,65 @@
     <button id="set-data">Set Data</button>
   </div>
 
-  <h1>Output (in test web page, not part of widget)</h1>
+  <h1>Pure JS Web Component Demo</h1>
+  <p>Example using the pure JS web component.</p>
+
+  <purejs-component id="pure-widget" class="bluebox"></purejs-component>
+
+  <h2>Pure JS Widget Controls</h2>
+  <div>
+    <label>
+      Label Text:
+      <input type="text" id="pure-label" value="My Pure Label">
+    </label>
+    <label>
+      <input type="checkbox" id="pure-border" checked>
+      Show Border
+    </label>
+    <button id="update-pure">Update Pure Widget</button>
+  </div>
+
+  <h1>Output for any widget (in test web page, not part of widget)</h1>
+
   <p>This area will display messages (if any are available) emitted from the widget:</p>
   <div id="output" class="bluebox"></div>
 
   <script type="module">
     // Import the compiled web component
     import '/dist/SvelteWidget.js';
+    import '/js/pure-js-web-component.js';
 
     // Listen for custom events from the widget
     const widget = document.getElementById('my-widget');
+    const pureWidget = document.getElementById('pure-widget');
+
+    // Pure Widget Logic
+    pureWidget.addEventListener('outputAction', (e) => {
+      document.getElementById('output').textContent =
+        'Pure Widget Output: ' + JSON.stringify(e.detail) +
+        ' (Event type: ' + e.type + ')';
+    });
+
+    const pureLabelInput = document.getElementById('pure-label');
+    const pureBorderCheck = document.getElementById('pure-border');
+    const updatePureBtn = document.getElementById('update-pure');
+
+    // Initial set
+    pureWidget.inputData = {
+      label: pureLabelInput.value,
+      styles: { showBorder: pureBorderCheck.checked, textColor: '#333' }
+    };
+
+    updatePureBtn.addEventListener('click', () => {
+      pureWidget.inputData = {
+        label: pureLabelInput.value,
+        styles: {
+          showBorder: pureBorderCheck.checked,
+          textColor: '#333'
+        }
+      };
+    });
+
     widget.addEventListener('message', (e) => {
       document.getElementById('output').textContent =
         'Widget data: ' + JSON.stringify(e.detail) + '  ---  ' +
