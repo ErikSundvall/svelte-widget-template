@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>Svelte Widget Demo</title>
@@ -8,16 +9,19 @@
       display: block;
       border: 1px solid blue;
       padding: 1em;
-      margin-block: 1em; /* Adds space above and below */
+      margin-block: 1em;
+      /* Adds space above and below */
     }
   </style>
 </head>
+
 <body>
   <h1>Svelte Widget Demo</h1>
-  <p>Simpe test webpage during development that inside the blue frame below uses a widget intended for Better EHR Studio and the associated Form Renderer</p>
- 
+  <p>Simpe test webpage during development that inside the blue frame below uses a widget intended for Better EHR Studio
+    and the associated Form Renderer</p>
+
   <!-- Use the custom element -->
-  <svelte-widget id="my-widget" class="bluebox""></svelte-widget>
+  <svelte-widget id="my-widget" class="bluebox"></svelte-widget>
 
   <h1>Controls (in test web page, not part of widget) </h1>
   <div>
@@ -40,9 +44,9 @@
     <button id="set-data">Set Data</button>
   </div>
 
-  <h1>Output  (in test web page, not part of widget)</h1>
+  <h1>Output (in test web page, not part of widget)</h1>
   <p>This area will display messages (if any are available) emitted from the widget:</p>
-  <div id="output" class="bluebox""></div>
+  <div id="output" class="bluebox"></div>
 
   <script type="module">
     // Import the compiled web component
@@ -52,9 +56,9 @@
     const widget = document.getElementById('my-widget');
     widget.addEventListener('message', (e) => {
       document.getElementById('output').textContent =
-        'Widget data: ' + JSON.stringify(e.detail) +'  ---  '+
+        'Widget data: ' + JSON.stringify(e.detail) + '  ---  ' +
         'Widget event (e): ' + JSON.stringify(e);
-      });
+    });
 
     // Controls
     const toggleButtonCheckbox = document.getElementById('toggle-button');
@@ -71,12 +75,13 @@
     });
 
     const formDataField = document.getElementById('form-data');
-    
+
     const setDataButton = document.getElementById('set-data');
     setDataButton.addEventListener('click', () => {
-      widget.useDefaultData = false; 
-      widget.inputData = formDataField.value; 
+      widget.useDefaultData = false;
+      widget.inputData = formDataField.value;
     });
   </script>
 </body>
+
 </html>

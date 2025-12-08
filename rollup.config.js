@@ -36,7 +36,7 @@ export default [{
 		sourcemap: true,
 		format: 'iife',
 		name: 'app',
-		file: 'dist/SvelteWidget.js'
+		file: 'public/dist/SvelteWidget.js'
 	},
 	plugins: [
 		svelte({
@@ -49,7 +49,7 @@ export default [{
 		}),
 		// we'll extract any component CSS out into
 		// a separate file - better for performance
-		css({ output: 'bundle.css' }),
+		css({ output: 'public/dist/bundle.css' }),
 
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In
@@ -87,7 +87,7 @@ export default [{
 		sourcemap: true,
 		format: 'iife',
 		name: 'app2',
-		file: 'dist/TextgenWidgetAlpha1.js'
+		file: 'public/dist/TextgenWidgetAlpha1.js'
 	},
 	plugins: [
 		svelte({
@@ -100,7 +100,7 @@ export default [{
 		}),
 		// we'll extract any component CSS out into
 		// a separate file - better for performance
-		css({ output: 'bundle2.css' }),
+		css({ output: 'public/dist/bundle2.css' }),
 
 		resolve({
 			browser: true,
