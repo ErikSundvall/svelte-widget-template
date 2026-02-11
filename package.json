@@ -11,6 +11,8 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
     "@rollup/plugin-node-resolve": "^11.0.0",
+    "@rollup/plugin-typescript": "^8.0.0",
+    "@tsconfig/svelte": "^2.0.0",
     "rollup": "^2.3.4",
     "rollup-plugin-css-only": "^3.1.0",
     "rollup-plugin-livereload": "^2.0.0",
@@ -19,12 +21,26 @@
     "svelte": "^3.0.0",
     "svelte-check": "^2.0.0",
     "svelte-preprocess": "^4.0.0",
-    "@rollup/plugin-typescript": "^8.0.0",
-    "typescript": "^4.0.0",
     "tslib": "^2.0.0",
-    "@tsconfig/svelte": "^2.0.0"
+    "typescript": "^4.0.0"
   },
   "dependencies": {
-    "sirv-cli": "^1.0.0"
-  }
+    "sirv-cli": "^1.0.0",
+    "vega": "^6.2.0",
+    "vega-lite": "^6.4.2"
+  },
+  "description": "template for creating a widget in Svelte framework",
+  "main": "debug_vega.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ErikSundvall/svelte-widget-template.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ErikSundvall/svelte-widget-template/issues"
+  },
+  "homepage": "https://github.com/ErikSundvall/svelte-widget-template#readme"
 }

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurable Diagrams Mockup (Vega-Lite)</title>
+    <script src="https://cdn.jsdelivr.net/npm/vega@5.25.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.16.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.22.2"></script>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #test-container {
+            flex-grow: 1;
+            margin: 20px;
+            border: 2px dashed #999;
+            background: white;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #test-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        #vis {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="test-container">
+        <div id="test-label">Responsive Container (Vega-Lite)</div>
+        <div id="vis"></div>
+    </div>
+
+    <script>
+        // --- Data Generation (Logic ported from diagram_mockup.html) ---
+        const now = new Date();
+        const dataPoints = 60;
+        // Generate time points
+        const times = Array.from({ length: dataPoints }, (_, i) => new Date(now.getTime() - (dataPoints - i) * 3600 * 1000));
+
+        // Track 1 Data
+        const tempData = times.map(t => ({
+            time: t.getTime(),
+            value: 36.5 + Math.sin(t.getTime() / 10000000) + Math.random() * 0.5,
+            unit: '°C',
+            type: 'Temp'
+        }));
+
+        const spo2Data = times.map(t => {
+            let val = 94 + Math.random() * 5;
+            if (Math.random() < 0.1) val -= Math.random() * 10;
+            val = Math.max(80, Math.min(100, val));
+            return { time: t.getTime(), value: val, unit: '%', type: 'SpO2' };
+        });
+
+        // Track 2 Data (BP & Pulse) - Includes rounding fix
+        const bpData = times.map((t) => {
+            if (Math.random() > 0.4) return null;
+            const sys = Math.round(120 + Math.random() * 20 - 10);
+            const dia = Math.round(80 + Math.random() * 10 - 5);
+            const pulseVal = Math.round(70 + Math.random() * 15);
+            return {
+                time: t.getTime(),
+                systolic: sys,
+                diastolic: dia,
+                pulse: pulseVal,
+                type: 'BP'
+            };
+        }).filter(d => d);
+
+        // Track 3 Data (Wellbeing)
+        const catData = times.map(t => {
+            if (Math.random() > 0.4) return null;
+            return {
+                time: t.getTime(),
+                value: Math.floor(Math.random() * 5) + 1,
+                unit: 'score',
+                type: 'Wellbeing'
+            };
+        }).filter(d => d);
+
+        // --- Vega-Lite Specification ---
+        const spec = {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "background": "white",
+            "padding": 5,
+            "autosize": {
+                "type": "fit",
+                "contains": "padding",
+                "resize": true
+            },
+            "data": { "name": "base" }, // Placeholder, we'll inject via embed
+            "vconcat": [
+                {
+                    // --- Track 1: Temp & SpO2 ---
+                    "height": 180, // Approximate proportional height
+                    "width": "container",
+                    "resolve": { "scale": { "y": "independent" } },
+                    "layer": [
+                        // Temp Line & Points
+                        {
+                            "data": { "values": tempData },
+                            "layer": [
+                                {
+                                    "mark": { "type": "line", "color": "#e63946", "interpolate": "monotone" },
+                                    "encoding": {
+                                        "x": { "field": "time", "type": "temporal", "axis": null }, // No axis for top tracks
+                                        "y": {
+                                            "field": "value",
+                                            "type": "quantitative",
+                                            "scale": { "domain": [35, 42] },
+                                            "axis": { "title": "Temp °C", "titleColor": "#e63946", "orient": "left" }
+                                        }
+                                    }
+                                },
+                                {
+                                    "mark": { "type": "point", "fill": "white", "stroke": "#e63946", "strokeWidth": 2, "size": 30 },
+                                    "encoding": {
+                                        "x": { "field": "time", "type": "temporal" },
+                                        "y": { "field": "value", "type": "quantitative" },
+                                        "tooltip": [
+                                            { "field": "type", "title": "Type" },
+                                            { "field": "time", "title": "Time", "type": "temporal", "format": "%Y-%m-%d %H:%M", "formatType": "time" },
+                                            { "field": "value", "title": "Value", "format": ".1f" },
+                                            { "field": "unit", "title": "Unit" }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        // SpO2 Line
+                        {
+                            "data": { "values": spo2Data },
+                            "mark": { "type": "line", "color": "#0077be", "strokeDash": [4, 2], "interpolate": "monotone" },
+                            "encoding": {
+                                "x": { "field": "time", "type": "temporal" },
+                                "y": {
+                                    "field": "value",
+                                    "type": "quantitative",
+                                    "scale": { "domain": [80, 100] },
+                                    "axis": { "title": "SpO2 %", "titleColor": "#0077be", "orient": "right", "grid": false }
+                                },
+                                "tooltip": [
+                                    { "field": "type", "title": "Type" },
+                                    { "field": "time", "title": "Time", "type": "temporal", "format": "%Y-%m-%d %H:%M", "formatType": "time" },
+                                    { "field": "value", "title": "Value", "format": ".1f" },
+                                    { "field": "unit", "title": "Unit" }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    // --- Track 2: BP & Pulse ---
+                    "height": 360, // BP track is weight 2
+                    "width": "container",
+                    "data": { "values": bpData },
+                    "layer": [
+                        // BP Connector Line
+                        {
+                            "mark": { "type": "rule", "color": "#555", "strokeDash": [2, 2] },
+                            "encoding": {
+                                "x": { "field": "time", "type": "temporal", "axis": null },
+                                "y": { "field": "systolic", "type": "quantitative", "scale": { "domain": [40, 160] }, "axis": { "title": "BP / Pulse", "orient": "left" } },
+                                "y2": { "field": "diastolic" }
+                            }
+                        },
+                        // Systolic Triangle
+                        {
+                            "mark": { "type": "point", "shape": "triangle-down", "fill": "#457b9d", "size": 150, "opacity": 1 },
+                            "encoding": {
+                                "x": { "field": "time", "type": "temporal" },
+                                "y": { "field": "systolic", "type": "quantitative" },
+                                "tooltip": [
+                                    { "datum": "Systolic", "title": "Type" },
+                                    { "field": "time", "title": "Time", "type": "temporal", "format": "%Y-%m-%d %H:%M", "formatType": "time" },
+                                    { "field": "systolic", "title": "Value", "format": "d" },
+                                    { "value": "mm[Hg]", "title": "Unit" }
+                                ]
+                            }
+                        },
+                        // Diastolic Triangle
+                        {
+                            "mark": { "type": "point", "shape": "triangle-up", "fill": "#1d3557", "size": 150, "opacity": 1 },
+                            "encoding": {
+                                "x": { "field": "time", "type": "temporal" },
+                                "y": { "field": "diastolic", "type": "quantitative" },
+                                "tooltip": [
+                                    { "datum": "Diastolic", "title": "Type" },
+                                    { "field": "time", "title": "Time", "type": "temporal", "format": "%Y-%m-%d %H:%M", "formatType": "time" },
+                                    { "field": "diastolic", "title": "Value", "format": "d" },
+                                    { "value": "mm[Hg]", "title": "Unit" }
+                                ]
+                            }
+                        },
+                        // Pulse Circle
+                        {
+                            "mark": { "type": "point", "shape": "circle", "fill": "white", "stroke": "#e63946", "strokeWidth": 2, "size": 100 },
+                            "encoding": {
+                                "x": { "field": "time", "type": "temporal" },
+                                "y": { "field": "pulse", "type": "quantitative" },
+                                "tooltip": [
+                                    { "datum": "Pulse", "title": "Type" },
+                                    { "field": "time", "title": "Time", "type": "temporal", "format": "%Y-%m-%d %H:%M", "formatType": "time" },
+                                    { "field": "pulse", "title": "Value", "format": "d" },
+                                    { "value": "/min", "title": "Unit" }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    // --- Track 3: Wellbeing ---
+                    "height": 90, // Weight 0.5
+                    "width": "container",
+                    "data": { "values": catData },
+                    "layer": [
+                        {
+                            "mark": { "type": "rect", "width": 12, "rx": 2 },
+                            "encoding": {
+                                "x": {
+                                    "field": "time",
+                                    "type": "temporal",
+                                    "title": null,
+                                    "axis": {
+                                        "format": "%H:%M",
+                                        "grid": true,
+                                        "tickCount": "hour"
+                                    }
+                                },
+                                "y": {
+                                    "field": "value",
+                                    "type": "ordinal",
+                                    "scale": {
+                                        "domain": [5 , 4, 3, 2, 1],
+                                        "padding": 0.2
+                                    },
+                                    "axis": {
+                                        "title": "Wellbeing",
+                                        "ticks": false,
+                                        "grid": true,
+                                        "labelPadding": 10
+                                    }
+                                },
+                                "color": {
+                                    "field": "value",
+                                    "type": "ordinal",
+                                    "scale": {
+                                        "domain": [1, 2, 3, 4, 5],
+                                        "range": ["#d62828", "#f77f00", "#fcbf49", "#aacc00", "#2a9d8f"]
+                                    },
+                                    "legend": null
+                                },
+                                "tooltip": [
+                                    { "field": "type", "title": "Type" },
+                                    { "field": "time", "title": "Time", "type": "temporal", "format": "%Y-%m-%d %H:%M", "formatType": "time" },
+                                    { "field": "value", "title": "Score" },
+                                    { "field": "unit", "title": "Unit" }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "resolve": {
+                "scale": { "x": "shared" },
+                "axis": { "x": "shared" }
+            },
+            "config": {
+                "axis": { "grid": true, "domain": false, "ticks": false },
+                "view": { "stroke": "transparent" } // Remove frame borders
+            }
+        };
+
+        vegaEmbed('#vis', spec, { actions: false }).then(result => {
+            // Optional: Access view instance via result.view
+        }).catch(console.error);
+    </script>
+</body>
+
+</html>
