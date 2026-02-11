@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Vega Lite Config + D3 Rendering Diagram</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .chart {
+            margin-bottom: 30px;
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .axis-label {
+            font-size: 12px;
+            fill: #666;
+        }
+        .axis path,
+        .axis line {
+            stroke: #ddd;
+        }
+        .axis text {
+            fill: #666;
+            font-size: 11px;
+        }
+        .grid line {
+            stroke: #e0e0e0;
+            stroke-opacity: 0.7;
+            shape-rendering: crispEdges;
+        }
+        .grid path {
+            stroke-width: 0;
+        }
+        .line {
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+        }
+        .area {
+            opacity: 0.3;
+        }
+        .point {
+            stroke: white;
+            stroke-width: 2;
+        }
+        .bar {
+            rx: 2;
+        }
+        .legend {
+            font-size: 12px;
+        }
+        .legend-item {
+            cursor: pointer;
+        }
+        .legend-item text {
+            fill: #333;
+        }
+        .reference-line {
+            stroke: #999;
+            stroke-width: 1;
+            stroke-dasharray: 5,5;
+        }
+        .reference-label {
+            font-size: 10px;
+            fill: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Health Metrics Dashboard</h1>
+        <p class="description">
+            This diagram uses a Vega Lite-style declarative configuration combined with custom D3 rendering 
+            for enhanced visual aesthetics. The configuration is JSON-based and easily modifiable.
+        </p>
+        <div id="charts"></div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // VEGA LITE-STYLE DECLARATIVE CONFIGURATION
+        // ============================================================================
+        const spec = {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "description": "Health metrics visualization with blood pressure, pulse, and wellbeing",
+            "data": {
+                "values": [
+                    {"date": "2026-02-04", "systolic": 128, "diastolic": 82, "pulse": 72, "wellbeing": 2},
+                    {"date": "2026-02-05", "systolic": 132, "diastolic": 85, "pulse": 75, "wellbeing": 2},
+                    {"date": "2026-02-06", "systolic": 125, "diastolic": 80, "pulse": 68, "wellbeing": 3},
+                    {"date": "2026-02-07", "systolic": 130, "diastolic": 83, "pulse": 70, "wellbeing": 2},
+                    {"date": "2026-02-08", "systolic": 135, "diastolic": 88, "pulse": 78, "wellbeing": 2},
+                    {"date": "2026-02-09", "systolic": 122, "diastolic": 78, "pulse": 65, "wellbeing": 3},
+                    {"date": "2026-02-10", "systolic": 127, "diastolic": 81, "pulse": 71, "wellbeing": 3},
+                    {"date": "2026-02-11", "systolic": 129, "diastolic": 84, "pulse": 73, "wellbeing": 2}
+                ]
+            },
+            "charts": [
+                {
+                    "type": "line-area",
+                    "title": "Blood Pressure (mmHg)",
+                    "width": 1000,
+                    "height": 200,
+                    "encoding": {
+                        "x": {
+                            "field": "date",
+                            "type": "temporal",
+                            "title": "Date"
+                        },
+                        "y": {
+                            "title": "Blood Pressure (mmHg)",
+                            "domain": [60, 150]
+                        }
+                    },
+                    "layers": [
+                        {
+                            "mark": "area",
+                            "encoding": {
+                                "y": {"field": "systolic"},
+                                "y2": {"field": "diastolic"},
+                                "color": {"value": "#4682b4"}
+                            }
+                        },
+                        {
+                            "mark": "line",
+                            "encoding": {
+                                "y": {"field": "systolic"},
+                                "color": {"value": "#1e3a8a"},
+                                "strokeWidth": {"value": 2.5}
+                            }
+                        },
+                        {
+                            "mark": "line",
+                            "encoding": {
+                                "y": {"field": "diastolic"},
+                                "color": {"value": "#3b82f6"},
+                                "strokeWidth": {"value": 2.5}
+                            }
+                        },
+                        {
+                            "mark": "point",
+                            "encoding": {
+                                "y": {"field": "systolic"},
+                                "color": {"value": "#1e3a8a"},
+                                "size": {"value": 50}
+                            }
+                        },
+                        {
+                            "mark": "point",
+                            "encoding": {
+                                "y": {"field": "diastolic"},
+                                "color": {"value": "#3b82f6"},
+                                "size": {"value": 50}
+                            }
+                        }
+                    ],
+                    "referenceLines": [
+                        {"value": 120, "label": "Systolic target"},
+                        {"value": 80, "label": "Diastolic target"}
+                    ]
+                },
+                {
+                    "type": "line",
+                    "title": "Pulse (bpm)",
+                    "width": 1000,
+                    "height": 150,
+                    "encoding": {
+                        "x": {
+                            "field": "date",
+                            "type": "temporal",
+                            "title": "Date"
+                        },
+                        "y": {
+                            "field": "pulse",
+                            "title": "Pulse (bpm)",
+                            "domain": [50, 100]
+                        },
+                        "color": {"value": "#dc2626"},
+                        "strokeWidth": {"value": 2.5}
+                    },
+                    "mark": "line-point",
+                    "referenceLines": [
+                        {"value": 60, "label": "Lower normal"},
+                        {"value": 80, "label": "Upper normal"}
+                    ]
+                },
+                {
+                    "type": "bar",
+                    "title": "Wellbeing (1=poor, 2=ok, 3=good)",
+                    "width": 1000,
+                    "height": 120,
+                    "encoding": {
+                        "x": {
+                            "field": "date",
+                            "type": "temporal",
+                            "title": "Date"
+                        },
+                        "y": {
+                            "field": "wellbeing",
+                            "title": "Wellbeing",
+                            "domain": [0, 3.5]
+                        },
+                        "color": {
+                            "field": "wellbeing",
+                            "scale": {
+                                "domain": [1, 2, 3],
+                                "range": ["#ef4444", "#f59e0b", "#10b981"]
+                            }
+                        }
+                    },
+                    "referenceLines": [
+                        {"value": 1.5, "label": ""},
+                        {"value": 2.5, "label": ""}
+                    ]
+                }
+            ]
+        };
+
+        // ============================================================================
+        // D3 RENDERER - Converts Vega Lite-style spec to beautiful D3 visualizations
+        // ============================================================================
+        
+        class D3Renderer {
+            constructor(spec) {
+                this.spec = spec;
+                this.data = this.parseData(spec.data);
+            }
+
+            parseData(dataSpec) {
+                const parseTime = d3.timeParse("%Y-%m-%d");
+                return dataSpec.values.map(d => ({
+                    ...d,
+                    date: parseTime(d.date)
+                }));
+            }
+
+            render(containerId) {
+                const container = d3.select(`#${containerId}`);
+                
+                this.spec.charts.forEach((chartSpec, index) => {
+                    const chartDiv = container.append("div")
+                        .attr("class", "chart")
+                        .attr("id", `chart-${index}`);
+                    
+                    chartDiv.append("div")
+                        .attr("class", "chart-title")
+                        .text(chartSpec.title);
+
+                    switch(chartSpec.type) {
+                        case "line-area":
+                            this.renderLineAreaChart(chartDiv, chartSpec);
+                            break;
+                        case "line":
+                            this.renderLineChart(chartDiv, chartSpec);
+                            break;
+                        case "bar":
+                            this.renderBarChart(chartDiv, chartSpec);
+                            break;
+                    }
+                });
+            }
+
+            renderLineAreaChart(container, chartSpec) {
+                const margin = {top: 20, right: 120, bottom: 40, left: 60};
+                const width = chartSpec.width - margin.left - margin.right;
+                const height = chartSpec.height - margin.top - margin.bottom;
+
+                const svg = container.append("svg")
+                    .attr("width", chartSpec.width)
+                    .attr("height", chartSpec.height)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                // Scales
+                const x = d3.scaleTime()
+                    .domain(d3.extent(this.data, d => d.date))
+                    .range([0, width]);
+
+                const y = d3.scaleLinear()
+                    .domain(chartSpec.encoding.y.domain)
+                    .range([height, 0]);
+
+                // Grid
+                const yGrid = d3.axisLeft(y)
+                    .tickSize(-width)
+                    .tickFormat("")
+                    .ticks(10);
+
+                svg.append("g")
+                    .attr("class", "grid")
+                    .call(yGrid);
+
+                // Reference lines
+                if (chartSpec.referenceLines) {
+                    chartSpec.referenceLines.forEach(refLine => {
+                        svg.append("line")
+                            .attr("class", "reference-line")
+                            .attr("x1", 0)
+                            .attr("x2", width)
+                            .attr("y1", y(refLine.value))
+                            .attr("y2", y(refLine.value));
+                        
+                        if (refLine.label) {
+                            svg.append("text")
+                                .attr("class", "reference-label")
+                                .attr("x", width + 5)
+                                .attr("y", y(refLine.value))
+                                .attr("dy", "0.32em")
+                                .text(refLine.label);
+                        }
+                    });
+                }
+
+                // Area
+                const areaLayer = chartSpec.layers.find(l => l.mark === "area");
+                if (areaLayer) {
+                    const area = d3.area()
+                        .x(d => x(d.date))
+                        .y0(d => y(d[areaLayer.encoding.y2.field]))
+                        .y1(d => y(d[areaLayer.encoding.y.field]))
+                        .curve(d3.curveMonotoneX);
+
+                    svg.append("path")
+                        .datum(this.data)
+                        .attr("class", "area")
+                        .attr("fill", areaLayer.encoding.color.value)
+                        .attr("d", area);
+                }
+
+                // Lines
+                const lineSpec = d3.line()
+                    .x(d => x(d.date))
+                    .curve(d3.curveMonotoneX);
+
+                chartSpec.layers
+                    .filter(l => l.mark === "line")
+                    .forEach(lineLayer => {
+                        const line = lineSpec.y(d => y(d[lineLayer.encoding.y.field]));
+                        
+                        svg.append("path")
+                            .datum(this.data)
+                            .attr("class", "line")
+                            .attr("stroke", lineLayer.encoding.color.value)
+                            .attr("stroke-width", lineLayer.encoding.strokeWidth?.value || 2)
+                            .attr("d", line);
+                    });
+
+                // Points
+                chartSpec.layers
+                    .filter(l => l.mark === "point")
+                    .forEach(pointLayer => {
+                        svg.selectAll(`.point-${pointLayer.encoding.y.field}`)
+                            .data(this.data)
+                            .enter()
+                            .append("circle")
+                            .attr("class", "point")
+                            .attr("cx", d => x(d.date))
+                            .attr("cy", d => y(d[pointLayer.encoding.y.field]))
+                            .attr("r", Math.sqrt(pointLayer.encoding.size.value / Math.PI))
+                            .attr("fill", pointLayer.encoding.color.value);
+                    });
+
+                // Axes
+                const xAxis = d3.axisBottom(x)
+                    .ticks(d3.timeDay.every(1))
+                    .tickFormat(d3.timeFormat("%b %d"));
+
+                const yAxis = d3.axisLeft(y)
+                    .ticks(10);
+
+                svg.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(xAxis)
+                    .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .style("text-anchor", "end");
+
+                svg.append("g")
+                    .attr("class", "axis")
+                    .call(yAxis);
+
+                // Y-axis label
+                svg.append("text")
+                    .attr("class", "axis-label")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -height / 2)
+                    .attr("y", -45)
+                    .style("text-anchor", "middle")
+                    .text(chartSpec.encoding.y.title);
+
+                // Legend
+                const legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", `translate(${width + 10}, 10)`);
+
+                const legendItems = [
+                    {label: "Systolic", color: "#1e3a8a"},
+                    {label: "Diastolic", color: "#3b82f6"}
+                ];
+
+                legendItems.forEach((item, i) => {
+                    const legendItem = legend.append("g")
+                        .attr("class", "legend-item")
+                        .attr("transform", `translate(0, ${i * 20})`);
+
+                    legendItem.append("line")
+                        .attr("x1", 0)
+                        .attr("x2", 20)
+                        .attr("y1", 0)
+                        .attr("y2", 0)
+                        .attr("stroke", item.color)
+                        .attr("stroke-width", 2.5);
+
+                    legendItem.append("text")
+                        .attr("x", 25)
+                        .attr("y", 0)
+                        .attr("dy", "0.32em")
+                        .text(item.label);
+                });
+            }
+
+            renderLineChart(container, chartSpec) {
+                const margin = {top: 20, right: 100, bottom: 40, left: 60};
+                const width = chartSpec.width - margin.left - margin.right;
+                const height = chartSpec.height - margin.top - margin.bottom;
+
+                const svg = container.append("svg")
+                    .attr("width", chartSpec.width)
+                    .attr("height", chartSpec.height)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                // Scales
+                const x = d3.scaleTime()
+                    .domain(d3.extent(this.data, d => d.date))
+                    .range([0, width]);
+
+                const y = d3.scaleLinear()
+                    .domain(chartSpec.encoding.y.domain)
+                    .range([height, 0]);
+
+                // Grid
+                const yGrid = d3.axisLeft(y)
+                    .tickSize(-width)
+                    .tickFormat("")
+                    .ticks(10);
+
+                svg.append("g")
+                    .attr("class", "grid")
+                    .call(yGrid);
+
+                // Reference lines
+                if (chartSpec.referenceLines) {
+                    chartSpec.referenceLines.forEach(refLine => {
+                        svg.append("line")
+                            .attr("class", "reference-line")
+                            .attr("x1", 0)
+                            .attr("x2", width)
+                            .attr("y1", y(refLine.value))
+                            .attr("y2", y(refLine.value));
+                        
+                        if (refLine.label) {
+                            svg.append("text")
+                                .attr("class", "reference-label")
+                                .attr("x", width + 5)
+                                .attr("y", y(refLine.value))
+                                .attr("dy", "0.32em")
+                                .text(refLine.label);
+                        }
+                    });
+                }
+
+                // Line
+                const line = d3.line()
+                    .x(d => x(d.date))
+                    .y(d => y(d[chartSpec.encoding.y.field]))
+                    .curve(d3.curveMonotoneX);
+
+                svg.append("path")
+                    .datum(this.data)
+                    .attr("class", "line")
+                    .attr("stroke", chartSpec.encoding.color.value)
+                    .attr("stroke-width", chartSpec.encoding.strokeWidth.value)
+                    .attr("d", line);
+
+                // Points
+                svg.selectAll(".point")
+                    .data(this.data)
+                    .enter()
+                    .append("circle")
+                    .attr("class", "point")
+                    .attr("cx", d => x(d.date))
+                    .attr("cy", d => y(d[chartSpec.encoding.y.field]))
+                    .attr("r", 4)
+                    .attr("fill", chartSpec.encoding.color.value);
+
+                // Axes
+                const xAxis = d3.axisBottom(x)
+                    .ticks(d3.timeDay.every(1))
+                    .tickFormat(d3.timeFormat("%b %d"));
+
+                const yAxis = d3.axisLeft(y)
+                    .ticks(10);
+
+                svg.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(xAxis)
+                    .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .style("text-anchor", "end");
+
+                svg.append("g")
+                    .attr("class", "axis")
+                    .call(yAxis);
+
+                // Y-axis label
+                svg.append("text")
+                    .attr("class", "axis-label")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -height / 2)
+                    .attr("y", -45)
+                    .style("text-anchor", "middle")
+                    .text(chartSpec.encoding.y.title);
+            }
+
+            renderBarChart(container, chartSpec) {
+                const margin = {top: 20, right: 80, bottom: 40, left: 60};
+                const width = chartSpec.width - margin.left - margin.right;
+                const height = chartSpec.height - margin.top - margin.bottom;
+
+                const svg = container.append("svg")
+                    .attr("width", chartSpec.width)
+                    .attr("height", chartSpec.height)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                // Scales
+                const x = d3.scaleBand()
+                    .domain(this.data.map(d => d.date))
+                    .range([0, width])
+                    .padding(0.2);
+
+                const y = d3.scaleLinear()
+                    .domain(chartSpec.encoding.y.domain)
+                    .range([height, 0]);
+
+                const colorScale = d3.scaleOrdinal()
+                    .domain(chartSpec.encoding.color.scale.domain)
+                    .range(chartSpec.encoding.color.scale.range);
+
+                // Grid
+                const yGrid = d3.axisLeft(y)
+                    .tickSize(-width)
+                    .tickFormat("")
+                    .ticks(5);
+
+                svg.append("g")
+                    .attr("class", "grid")
+                    .call(yGrid);
+
+                // Reference lines
+                if (chartSpec.referenceLines) {
+                    chartSpec.referenceLines.forEach(refLine => {
+                        svg.append("line")
+                            .attr("class", "reference-line")
+                            .attr("x1", 0)
+                            .attr("x2", width)
+                            .attr("y1", y(refLine.value))
+                            .attr("y2", y(refLine.value));
+                    });
+                }
+
+                // Bars
+                svg.selectAll(".bar")
+                    .data(this.data)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "bar")
+                    .attr("x", d => x(d.date))
+                    .attr("y", d => y(d[chartSpec.encoding.y.field]))
+                    .attr("width", x.bandwidth())
+                    .attr("height", d => height - y(d[chartSpec.encoding.y.field]))
+                    .attr("fill", d => colorScale(d[chartSpec.encoding.color.field]));
+
+                // Axes
+                const xAxis = d3.axisBottom(x)
+                    .tickFormat(d => d3.timeFormat("%b %d")(d));
+
+                const yAxis = d3.axisLeft(y)
+                    .ticks(5);
+
+                svg.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(xAxis)
+                    .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .style("text-anchor", "end");
+
+                svg.append("g")
+                    .attr("class", "axis")
+                    .call(yAxis);
+
+                // Y-axis label
+                svg.append("text")
+                    .attr("class", "axis-label")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -height / 2)
+                    .attr("y", -45)
+                    .style("text-anchor", "middle")
+                    .text(chartSpec.encoding.y.title);
+            }
+        }
+
+        // ============================================================================
+        // INITIALIZE VISUALIZATION
+        // ============================================================================
+        
+        const renderer = new D3Renderer(spec);
+        renderer.render('charts');
+    </script>
+</body>
+</html>
