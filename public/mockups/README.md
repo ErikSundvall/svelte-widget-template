@@ -69,4 +69,5 @@ To modify the visualization:
 
 ## Usage
 Open the HTML file directly in a modern web browser (Chrome, Firefox, Safari, or Edge).
-No build process or server required - all dependencies are loaded from CDN.
+The D3 library is included locally in the repository for offline functionality.
+No build process or server required.
