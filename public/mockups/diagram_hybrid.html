@@ -132,6 +132,17 @@
         // ============================================================================
         // VEGA LITE-STYLE DECLARATIVE CONFIGURATION
         // ============================================================================
+        // NOTE: This is a hybrid approach using Vega Lite-inspired declarative JSON
+        // configuration with custom D3 rendering. The structure uses standard Vega Lite
+        // types where possible (e.g., "line", "point") rather than custom types.
+        //
+        // Data Structure for Multiple Values at Same Timepoint:
+        // Instead of nested structures like { time: t, systolic: {...}, diastolic: {...} },
+        // we use separate series arrays with the same timepoints:
+        //   - systolic: [{ time: t1, value: 120 }, { time: t2, value: 125 }, ...]
+        //   - diastolic: [{ time: t1, value: 80 }, { time: t2, value: 85 }, ...]
+        // This aligns better with standard visualization patterns and prepares for
+        // openEHR OBSERVATION instances that can have multiple values at the same timepoint.
         const spec = {
             "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
             "description": "Health metrics visualization with responsive design and Voronoi interactions",
