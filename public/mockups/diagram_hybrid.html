@@ -536,7 +536,7 @@
                 if (d.getHours() % 3 === 0) {
                     d3.select(this).append("text")
                         .attr("text-anchor", "middle").attr("y", 15).attr("font-size", "10px").attr("fill", "#444")
-                        .text(d3.timeFormat("%H:%M"));
+                        .text(d3.timeFormat("%H:%M")(d));
                 }
             });
 
