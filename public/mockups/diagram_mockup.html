@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurable Diagrams Mockup</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        #test-container {
+            position: absolute;
+            top: 20px;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            border: 2px dashed #999;
+            background: white;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            border-radius: 4px;
+        }
+
+        #test-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        #chart-container {
+            flex-grow: 1;
+            position: relative;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: left;
+            padding: 8px;
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+            line-height: 1.4;
+        }
+
+        .crosshair {
+            stroke: #999;
+            stroke-width: 1;
+            stroke-dasharray: 4, 2;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .axis text {
+            font-size: 10px;
+            fill: #666;
+        }
+
+        .axis path,
+        .axis line {
+            stroke: #ddd;
+        }
+
+        .axis.axis-blue text {
+            fill: #0077be;
+        }
+
+        .axis.axis-blue path,
+        .axis.axis-blue line {
+            stroke: #0077be;
+            opacity: 0.5;
+        }
+
+        .axis.axis-red text {
+            fill: #e63946;
+        }
+
+        .axis.axis-red path,
+        .axis.axis-red line {
+            stroke: #e63946;
+            opacity: 0.5;
+        }
+
+        .axis-label {
+            font-size: 11px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+
+        .legend text {
+            font-size: 10px;
+            fill: #555;
+            alignment-baseline: middle;
+        }
+
+        .grid line {
+            stroke: #f5f5f5;
+            shape-rendering: crispEdges;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="test-container">
+        <div id="test-label">Responsive Container (Resize Window to Test)</div>
+        <div id="chart-container"></div>
+    </div>
+    <div id="tooltip" class="tooltip"></div>
+
+    <script>
+        // --- Configuration ---
+        const trackWeights = [1, 2, 0.5];
+        const trackGaps = 20;
+        const margin = { top: 20, right: 40, bottom: 40, left: 40 };
+        const axisGap = 10;
+
+        // --- Data Generation ---
+        const now = new Date();
+        const dataPoints = 60;
+        const times = d3.range(dataPoints).map(i => new Date(now.getTime() - (dataPoints - i) * 3600 * 1000));
+
+        const tempData = times.map(t => ({
+            time: t, value: 36.5 + Math.sin(t.getTime() / 10000000) + Math.random() * 0.5, unit: '°C', type: 'Temp'
+        }));
+
+        const spo2Data = times.map(t => {
+            let val = 94 + Math.random() * 5; if (Math.random() < 0.1) val -= Math.random() * 10; val = Math.max(80, Math.min(100, val));
+            return { time: t, value: val, unit: '%', type: 'SpO2' };
+        });
+
+        const bpData = times.map((t) => {
+            if (Math.random() > 0.4) return null;
+            const sys = Math.round(120 + Math.random() * 20 - 10);
+            const dia = Math.round(80 + Math.random() * 10 - 5);
+            const pulseVal = Math.round(70 + Math.random() * 15);
+            return {
+                time: t,
+                systolic: { value: sys, unit: 'mm[Hg]', type: 'Systolic' },
+                diastolic: { value: dia, unit: 'mm[Hg]', type: 'Diastolic' },
+                pulse: { value: pulseVal, unit: '/min', type: 'Pulse' },
+            };
+        }).filter(d => d);
+
+        const catData = times.map(t => {
+            if (Math.random() > 0.4) return null;
+            return { time: t, value: Math.floor(Math.random() * 5) + 1, unit: 'score', type: 'Wellbeing' };
+        }).filter(d => d);
+
+
+        // --- Render Function ---
+        function renderChart(containerWidth, containerHeight) {
+            d3.select("#chart-container").selectAll("*").remove();
+
+            // Calculate Dimensions
+            const fullWidth = containerWidth;
+            const fullHeight = containerHeight;
+            const contentWidth = fullWidth - margin.left - margin.right;
+            const contentHeight = fullHeight - margin.top - margin.bottom - axisGap;
+
+            if (contentWidth < 0 || contentHeight < 0) return;
+
+            // Dynamic Track Heights
+            const totalWeight = trackWeights.reduce((a, b) => a + b, 0);
+            const availableTrackSpace = contentHeight - (trackWeights.length - 1) * trackGaps;
+            const trackHeights = trackWeights.map(w => (w / totalWeight) * availableTrackSpace);
+
+            // X Scale
+            const x = d3.scaleTime().domain(d3.extent(times)).range([0, contentWidth]);
+            const formatFullTime = d3.timeFormat("%Y-%m-%d %H:%M");
+
+            // SVG
+            const svg = d3.select("#chart-container")
+                .append("svg")
+                .attr("width", fullWidth)
+                .attr("height", fullHeight)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Define Gradient for Sticky Date
+            const defs = svg.append("defs");
+            const gradient = defs.append("linearGradient")
+                .attr("id", "fade-left")
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "100%")
+                .attr("y2", "0%");
+            gradient.append("stop").attr("offset", "0%").attr("style", "stop-color:#eef;stop-opacity:0"); // Fade start
+            gradient.append("stop").attr("offset", "30%").attr("style", "stop-color:#eef;stop-opacity:1"); // Solid quickly
+            gradient.append("stop").attr("offset", "100%").attr("style", "stop-color:#eef;stop-opacity:1");
+
+            let currentY = 0;
+            let voronoiPoints = [];
+            const pushVoronoi = (time, value, yOffset, yScale, data, label) => {
+                voronoiPoints.push({ x: x(time), y: yOffset + yScale(value), data, label, time: time });
+            };
+
+            // --- Track 1: Temp & SPO2 ---
+            (() => {
+                const height = trackHeights[0];
+                const g = svg.append("g").attr("transform", `translate(0, ${currentY})`);
+                const y1 = d3.scaleLinear().domain([35, 42]).range([height, 0]);
+                const y2 = d3.scaleLinear().domain([80, 100]).range([height, 0]);
+
+                g.append("g").attr("class", "grid").call(d3.axisLeft(y1).ticks(5).tickSize(-contentWidth).tickFormat(""));
+                const axL = g.append("g").attr("class", "axis axis-red").call(d3.axisLeft(y1).ticks(5));
+                axL.append("text").attr("class", "axis-label").attr("transform", "rotate(-90)").attr("y", -30).attr("x", -height / 2).attr("fill", "#e63946").text("Temp °C");
+                const axR = g.append("g").attr("class", "axis axis-blue").attr("transform", `translate(${contentWidth}, 0)`).call(d3.axisRight(y2).ticks(5));
+                axR.append("text").attr("class", "axis-label").attr("transform", "rotate(90)").attr("y", -30).attr("x", height / 2).attr("fill", "#0077be").text("SpO2 %");
+
+                g.append("path").datum(spo2Data).attr("fill", "none").attr("stroke", "#0077be").attr("stroke-width", 2).attr("stroke-dasharray", "4,2")
+                    .attr("d", d3.line().x(d => x(d.time)).y(d => y2(d.value)).curve(d3.curveMonotoneX));
+                spo2Data.forEach(d => pushVoronoi(d.time, d.value, currentY, y2, d, "SpO2"));
+
+                g.append("path").datum(tempData).attr("fill", "none").attr("stroke", "#e63946").attr("stroke-width", 2)
+                    .attr("d", d3.line().x(d => x(d.time)).y(d => y1(d.value)).curve(d3.curveMonotoneX));
+                g.selectAll(".dot-temp").data(tempData).enter().append("circle").attr("cx", d => x(d.time)).attr("cy", d => y1(d.value))
+                    .attr("r", 3).attr("fill", "white").attr("stroke", "#e63946").attr("stroke-width", 2);
+                tempData.forEach(d => pushVoronoi(d.time, d.value, currentY, y1, d, "Temp"));
+
+                currentY += height + trackGaps;
+            })();
+
+            // --- Track 2: BP & Pulse ---
+            (() => {
+                const height = trackHeights[1];
+                const g = svg.append("g").attr("transform", `translate(0, ${currentY})`);
+
+                const leg = g.append("g").attr("class", "legend").attr("transform", "translate(5,5)");
+                leg.append("path").attr("d", d3.symbol().type(d3.symbolTriangle).size(30)).attr("transform", "translate(5,5) rotate(180)").attr("fill", "#457b9d");
+                leg.append("text").attr("x", 15).attr("y", 5).text("Systolic");
+                leg.append("path").attr("d", d3.symbol().type(d3.symbolTriangle).size(30)).attr("transform", "translate(60,5)").attr("fill", "#1d3557");
+                leg.append("text").attr("x", 70).attr("y", 5).text("Diastolic");
+                leg.append("path").attr("d", d3.symbol().type(d3.symbolCircle).size(25)).attr("transform", "translate(115,5)").attr("fill", "white").attr("stroke", "#e63946").attr("stroke-width", 2);
+                leg.append("text").attr("x", 125).attr("y", 5).text("Pulse");
+
+                const y = d3.scaleLinear().domain([40, 160]).range([height, 0]);
+                g.append("g").attr("class", "grid").call(d3.axisLeft(y).ticks(6).tickSize(-contentWidth).tickFormat(""));
+                g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(6));
+
+                const items = g.selectAll(".bp-group").data(bpData).enter().append("g").attr("transform", d => `translate(${x(d.time)},0)`);
+                items.append("line").attr("y1", d => y(d.systolic.value)).attr("y2", d => y(d.diastolic.value)).attr("stroke", "#555").attr("stroke-width", 1).attr("stroke-dasharray", "2,2");
+                items.append("path").attr("d", d3.symbol().type(d3.symbolTriangle).size(60)).attr("transform", d => `translate(0,${y(d.systolic.value)}) rotate(180)`).attr("fill", "#457b9d");
+                items.append("path").attr("d", d3.symbol().type(d3.symbolTriangle).size(60)).attr("transform", d => `translate(0,${y(d.diastolic.value)})`).attr("fill", "#1d3557");
+                items.append("path").attr("d", d3.symbol().type(d3.symbolCircle).size(30)).attr("transform", d => `translate(0,${y(d.pulse.value)})`).attr("fill", "white").attr("stroke", "#e63946").attr("stroke-width", 2);
+
+                bpData.forEach(d => {
+                    pushVoronoi(d.time, d.systolic.value, currentY, y, d.systolic, "Systolic");
+                    pushVoronoi(d.time, d.diastolic.value, currentY, y, d.diastolic, "Diastolic");
+                    pushVoronoi(d.time, d.pulse.value, currentY, y, d.pulse, "Pulse");
+                });
+
+                currentY += height + trackGaps;
+            })();
+
+            // --- Track 3: Wellbeing ---
+            (() => {
+                const height = trackHeights[2];
+                const g = svg.append("g").attr("transform", `translate(0, ${currentY})`);
+                const y = d3.scaleLinear().domain([0.5, 5.5]).range([height, 0]);
+                g.append("g").attr("class", "grid").call(d3.axisLeft(y).tickValues([0.5, 1.5, 2.5, 3.5, 4.5, 5.5]).tickSize(-contentWidth).tickFormat(""));
+                // Visible Notches at grid lines
+                g.append("g").attr("class", "axis").call(d3.axisLeft(y).tickValues([0.5, 1.5, 2.5, 3.5, 4.5, 5.5]).tickFormat(""));
+                // Labels centered, no ticks
+                const ax = g.append("g").attr("class", "axis").call(d3.axisLeft(y).tickValues([1, 2, 3, 4, 5]).tickSize(0).tickFormat(d3.format("d")));
+                ax.append("text").attr("class", "axis-label").attr("transform", "rotate(-90)").attr("y", -30).attr("x", -height / 2).attr("fill", "#555").text("Wellbeing");
+                const color = d3.scaleOrdinal().domain([1, 2, 3, 4, 5]).range(["#d62828", "#f77f00", "#fcbf49", "#aacc00", "#2a9d8f"]);
+                const bandHeight = Math.abs(y(1) - y(2)) * 0.8;
+                g.selectAll(".cat").data(catData).enter().append("rect")
+                    .attr("x", d => x(d.time) - 6).attr("y", d => y(d.value) - bandHeight / 2).attr("width", 12).attr("height", bandHeight).attr("fill", d => color(d.value)).attr("rx", 2);
+                catData.forEach(d => pushVoronoi(d.time, d.value, currentY, y, d, "Wellbeing"));
+                currentY += height;
+            })();
+
+            // --- X Axis ---
+            const axisY = currentY + axisGap;
+            svg.append("line").attr("x1", 0).attr("y1", axisY).attr("x2", contentWidth).attr("y2", axisY).attr("stroke", "#ddd");
+            const xAxisG = svg.append("g").attr("transform", `translate(0, ${axisY})`).attr("class", "axis");
+            // Render ticks manually with hourly density
+            const hourlyTicks = x.ticks(d3.timeHour.every(1));
+
+            const tg = xAxisG.selectAll(".tick-label").data(hourlyTicks).enter().append("g").attr("transform", d => `translate(${x(d)}, 0)`);
+
+            // Ticks marks
+            tg.append("line").attr("y1", 0).attr("y2", 5).attr("stroke", "#ddd");
+
+            // Labels: only every 2 hours or based on space? Let's hide if crowded.
+            // Simple logic: Show every ~3 hours (+ midnight)
+            tg.each(function (d) {
+                if (d.getHours() % 3 === 0) {
+                    d3.select(this).append("text")
+                        .attr("text-anchor", "middle").attr("y", 15).attr("font-size", "10px").attr("fill", "#444")
+                        .text(d3.timeFormat("%H:%M"));
+                }
+            });
+
+            // Date Labels (Midnight & Sticky Left)
+            const dateStr = d3.timeFormat("%a %Y-%m-%d");
+            // Check if any midnight tick is visible
+            let stickyNeeded = true;
+            tg.each(function (d) {
+                if (d.getHours() === 0) {
+                    stickyNeeded = x(d) > 80; // If midnight is far enough right, we definitely need a sticky label for PREVIOUS day? 
+                    // Width increase for weekday
+                    const w = 100;
+
+                    // Draw normal midnight label
+                    const g = d3.select(this).append("g").attr("transform", `translate(0, 18)`);
+
+                    // Vertical line from notches to bottom
+                    // g is at axisY + 18. Ticks end at axisY + 5.
+                    // Start line at y = -12 (relative to g, so at axisY + 6)
+                    // End line at bottom: fullHeight - margin.top - (axisY + 18)
+                    const lineBottom = fullHeight - margin.top - (axisY + 18);
+                    g.append("line")
+                        .attr("x1", 0).attr("y1", -12)
+                        .attr("x2", 0).attr("y2", lineBottom)
+                        .attr("stroke", "#ddd").attr("stroke-width", 1);
+
+                    const arrowPath = `M0,0 L${w - 10},0 L${w},9 L${w - 10},18 L0,18 Z`;
+                    g.append("path").attr("d", arrowPath).attr("fill", "#eef").style("stroke", "none"); // Removed stroke using style to override CSS
+                    g.append("text").attr("x", 5).attr("y", 12).attr("font-size", "10px").attr("fill", "#446").attr("font-weight", "bold").text(dateStr(d)); // Reduced margin x:10->5
+
+                    if (x(d) < w + 10) stickyNeeded = false; // Overlap check
+                }
+            });
+
+            if (stickyNeeded) {
+                // Sticky Label at x=0 for the start date
+                const startD = x.domain()[0];
+                const stickyG = xAxisG.append("g").attr("transform", `translate(0, 18)`);
+                const w = 100;
+
+                const arrowPathFixed = `M0,0 L${w - 10},0 L${w},9 L${w - 10},18 L0,18 Z`;
+                stickyG.append("path").attr("d", arrowPathFixed).attr("fill", "url(#fade-left)").style("stroke", "none");
+                // Removed manual stroke border
+
+                stickyG.append("text").attr("x", 5).attr("y", 12).attr("font-size", "10px").attr("fill", "#446").attr("font-weight", "bold").text(dateStr(startD));
+                stickyG.lower(); // Move to background
+            }
+
+            // --- Crosshair ---
+            const crosshair = svg.append("line")
+                .attr("class", "crosshair")
+                .attr("y1", 0)
+                .attr("y2", axisY);
+
+            // --- Voronoi Interaction ---
+            const delaunay = d3.Delaunay.from(voronoiPoints, d => d.x, d => d.y);
+            const tooltip = d3.select("#tooltip");
+            const highlighter = svg.append("circle").attr("r", 8).attr("fill", "none").attr("stroke", "#333").attr("stroke-width", 2).attr("stroke-opacity", 0.5).style("opacity", 0).style("pointer-events", "none");
+
+            svg.append("rect")
+                .attr("width", contentWidth)
+                .attr("height", axisY)
+                .attr("fill", "transparent")
+                .on("mousemove", (event) => {
+                    const [mx, my] = d3.pointer(event);
+
+                    // Crosshair update
+                    crosshair.attr("x1", mx).attr("x2", mx).style("opacity", 0.8);
+
+                    const index = delaunay.find(mx, my);
+                    if (index !== null) {
+                        const d = voronoiPoints[index];
+                        if (Math.hypot(mx - d.x, my - d.y) < 50) {
+                            highlighter.attr("cx", d.x).attr("cy", d.y).style("opacity", 1);
+
+                            const bounds = document.getElementById("chart-container").getBoundingClientRect();
+                            const absX = bounds.left + margin.left + d.x;
+                            const absY = bounds.top + margin.top + d.y;
+                            let valStr = typeof d.data.value === 'number' ? d.data.value.toFixed(d.label === 'Wellbeing' ? 0 : 1) : d.data.value;
+
+                            tooltip.style("opacity", 0.95)
+                                .html(`<strong>${d.label}</strong><br>${formatFullTime(d.time)}<br>${valStr} ${d.data.unit}`)
+                                .style("left", (absX + 15) + "px")
+                                .style("top", (absY - 28) + "px");
+                        } else {
+                            highlighter.style("opacity", 0);
+                            tooltip.style("opacity", 0);
+                        }
+                    }
+                })
+                .on("mouseleave", () => {
+                    highlighter.style("opacity", 0);
+                    tooltip.style("opacity", 0);
+                    crosshair.style("opacity", 0);
+                });
+        }
+
+        // --- Resize Observer ---
+        const container = document.getElementById('chart-container');
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const { width, height } = entry.contentRect;
+                if (width > 0 && height > 0) {
+                    renderChart(width, height);
+                }
+            }
+        });
+        resizeObserver.observe(container);
+
+    </script>
+</body>
+
+</html>
