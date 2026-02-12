@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Vega Lite Config + D3 Rendering Diagram</title>
+    <script src="../js/lib/d3.v7.min.js"></script>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        #test-container {
+            position: absolute;
+            top: 20px;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            border: 2px dashed #999;
+            background: white;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            border-radius: 4px;
+        }
+
+        #test-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        #chart-container {
+            flex-grow: 1;
+            position: relative;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: left;
+            padding: 8px;
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+            line-height: 1.4;
+        }
+
+        .crosshair {
+            stroke: #999;
+            stroke-width: 1;
+            stroke-dasharray: 4, 2;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .axis text {
+            font-size: 10px;
+            fill: #666;
+        }
+
+        .axis path,
+        .axis line {
+            stroke: #ddd;
+        }
+
+        .axis.axis-blue text {
+            fill: #0077be;
+        }
+
+        .axis.axis-blue path,
+        .axis.axis-blue line {
+            stroke: #0077be;
+            opacity: 0.5;
+        }
+
+        .axis.axis-red text {
+            fill: #e63946;
+        }
+
+        .axis.axis-red path,
+        .axis.axis-red line {
+            stroke: #e63946;
+            opacity: 0.5;
+        }
+
+        .axis-label {
+            font-size: 11px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+
+        .legend text {
+            font-size: 10px;
+            fill: #555;
+            alignment-baseline: middle;
+        }
+
+        .grid line {
+            stroke: #f5f5f5;
+            shape-rendering: crispEdges;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="test-container">
+        <div id="test-label">Hybrid: Vega Lite-style Config + D3 Mockup Rendering (Resize Window to Test)</div>
+        <div id="chart-container"></div>
+    </div>
+    <div id="tooltip" class="tooltip"></div>
+
+    <script>
+        // ============================================================================
+        // VEGA LITE-STYLE DECLARATIVE CONFIGURATION
+        // ============================================================================
+        const spec = {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "description": "Health metrics visualization with responsive design and Voronoi interactions",
+            "config": {
+                "margin": { "top": 20, "right": 40, "bottom": 40, "left": 40 },
+                "trackGaps": 20,
+                "axisGap": 10
+            },
+            "data": {
+                "generator": "time-series",
+                "hours": 60,
+                "startTime": "now"
+            },
+            "tracks": [
+                {
+                    "weight": 1,
+                    "title": "Temperature & SpO2",
+                    "axes": [
+                        {
+                            "position": "left",
+                            "domain": [35, 42],
+                            "label": "Temp °C",
+                            "color": "#e63946",
+                            "ticks": 5
+                        },
+                        {
+                            "position": "right",
+                            "domain": [80, 100],
+                            "label": "SpO2 %",
+                            "color": "#0077be",
+                            "ticks": 5
+                        }
+                    ],
+                    "series": [
+                        {
+                            "type": "line",
+                            "data": "temp",
+                            "axis": "left",
+                            "color": "#e63946",
+                            "strokeWidth": 2,
+                            "curve": "monotoneX",
+                            "showPoints": true,
+                            "pointStyle": {
+                                "fill": "white",
+                                "stroke": "#e63946",
+                                "strokeWidth": 2,
+                                "radius": 3
+                            }
+                        },
+                        {
+                            "type": "line",
+                            "data": "spo2",
+                            "axis": "right",
+                            "color": "#0077be",
+                            "strokeWidth": 2,
+                            "strokeDasharray": "4,2",
+                            "curve": "monotoneX"
+                        }
+                    ]
+                },
+                {
+                    "weight": 2,
+                    "title": "Blood Pressure & Pulse",
+                    "axes": [
+                        {
+                            "position": "left",
+                            "domain": [40, 160],
+                            "label": "",
+                            "ticks": 6
+                        }
+                    ],
+                    "legend": {
+                        "items": [
+                            {"symbol": "triangle-up", "color": "#457b9d", "label": "Systolic"},
+                            {"symbol": "triangle-down", "color": "#1d3557", "label": "Diastolic"},
+                            {"symbol": "circle", "color": "#e63946", "label": "Pulse"}
+                        ]
+                    },
+                    "series": [
+                        {
+                            "type": "blood-pressure",
+                            "data": "bp",
+                            "axis": "left",
+                            "systolicColor": "#457b9d",
+                            "diastolicColor": "#1d3557",
+                            "pulseColor": "#e63946"
+                        }
+                    ]
+                },
+                {
+                    "weight": 0.5,
+                    "title": "Wellbeing",
+                    "axes": [
+                        {
+                            "position": "left",
+                            "domain": [0.5, 5.5],
+                            "label": "Wellbeing",
+                            "ticks": [1, 2, 3, 4, 5],
+                            "gridLines": [0.5, 1.5, 2.5, 3.5, 4.5, 5.5]
+                        }
+                    ],
+                    "series": [
+                        {
+                            "type": "categorical",
+                            "data": "wellbeing",
+                            "axis": "left",
+                            "colorScale": {
+                                "domain": [1, 2, 3, 4, 5],
+                                "range": ["#d62828", "#f77f00", "#fcbf49", "#aacc00", "#2a9d8f"]
+                            },
+                            "barWidth": 12,
+                            "barRadius": 2
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // ============================================================================
+        // DATA GENERATOR (from mockup)
+        // ============================================================================
+        function generateData(config) {
+            const now = new Date();
+            const hours = config.data.hours || 60;
+            const times = d3.range(hours).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
+
+            const tempData = times.map(t => ({
+                time: t, value: 36.5 + Math.sin(t.getTime() / 10000000) + Math.random() * 0.5, 
+                unit: '°C', type: 'Temp'
+            }));
+
+            const spo2Data = times.map(t => {
+                let val = 94 + Math.random() * 5; 
+                if (Math.random() < 0.1) val -= Math.random() * 10; 
+                val = Math.max(80, Math.min(100, val));
+                return { time: t, value: val, unit: '%', type: 'SpO2' };
+            });
+
+            const bpData = times.map((t) => {
+                if (Math.random() > 0.4) return null;
+                const sys = Math.round(120 + Math.random() * 20 - 10);
+                const dia = Math.round(80 + Math.random() * 10 - 5);
+                const pulseVal = Math.round(70 + Math.random() * 15);
+                return {
+                    time: t,
+                    systolic: { value: sys, unit: 'mm[Hg]', type: 'Systolic' },
+                    diastolic: { value: dia, unit: 'mm[Hg]', type: 'Diastolic' },
+                    pulse: { value: pulseVal, unit: '/min', type: 'Pulse' },
+                };
+            }).filter(d => d);
+
+            const wellbeingData = times.map(t => {
+                if (Math.random() > 0.4) return null;
+                return { time: t, value: Math.floor(Math.random() * 5) + 1, unit: 'score', type: 'Wellbeing' };
+            }).filter(d => d);
+
+            return { temp: tempData, spo2: spo2Data, bp: bpData, wellbeing: wellbeingData, times };
+        }
+
+        // ============================================================================
+        // D3 RENDERER (from mockup line 131 onwards)
+        // ============================================================================
+        function renderChart(containerWidth, containerHeight) {
+            d3.select("#chart-container").selectAll("*").remove();
+
+            const data = generateData(spec);
+            const margin = spec.config.margin;
+            const trackGaps = spec.config.trackGaps;
+            const axisGap = spec.config.axisGap;
+
+            // Calculate Dimensions
+            const fullWidth = containerWidth;
+            const fullHeight = containerHeight;
+            const contentWidth = fullWidth - margin.left - margin.right;
+            const contentHeight = fullHeight - margin.top - margin.bottom - axisGap;
+
+            if (contentWidth < 0 || contentHeight < 0) return;
+
+            // Dynamic Track Heights
+            const trackWeights = spec.tracks.map(t => t.weight);
+            const totalWeight = trackWeights.reduce((a, b) => a + b, 0);
+            const availableTrackSpace = contentHeight - (trackWeights.length - 1) * trackGaps;
+            const trackHeights = trackWeights.map(w => (w / totalWeight) * availableTrackSpace);
+
+            // X Scale
+            const x = d3.scaleTime().domain(d3.extent(data.times)).range([0, contentWidth]);
+            const formatFullTime = d3.timeFormat("%Y-%m-%d %H:%M");
+
+            // SVG
+            const svg = d3.select("#chart-container")
+                .append("svg")
+                .attr("width", fullWidth)
+                .attr("height", fullHeight)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Define Gradient for Sticky Date
+            const defs = svg.append("defs");
+            const gradient = defs.append("linearGradient")
+                .attr("id", "fade-left")
+                .attr("x1", "0%")
+                .attr("y1", "0%")
+                .attr("x2", "100%")
+                .attr("y2", "0%");
+            gradient.append("stop").attr("offset", "0%").attr("style", "stop-color:#eef;stop-opacity:0");
+            gradient.append("stop").attr("offset", "30%").attr("style", "stop-color:#eef;stop-opacity:1");
+            gradient.append("stop").attr("offset", "100%").attr("style", "stop-color:#eef;stop-opacity:1");
+
+            let currentY = 0;
+            let voronoiPoints = [];
+            const pushVoronoi = (time, value, yOffset, yScale, data, label) => {
+                voronoiPoints.push({ x: x(time), y: yOffset + yScale(value), data, label, time: time });
+            };
+
+            // Render each track
+            spec.tracks.forEach((trackSpec, trackIndex) => {
+                const height = trackHeights[trackIndex];
+                const g = svg.append("g").attr("transform", `translate(0, ${currentY})`);
+
+                // Create scales for this track
+                const scales = {};
+                trackSpec.axes.forEach(axis => {
+                    scales[axis.position] = d3.scaleLinear()
+                        .domain(axis.domain)
+                        .range([height, 0]);
+                });
+
+                // Grid (use first axis)
+                const firstAxis = trackSpec.axes[0];
+                const gridScale = scales[firstAxis.position];
+                g.append("g").attr("class", "grid")
+                    .call(d3.axisLeft(gridScale)
+                        .tickValues(firstAxis.gridLines || null)
+                        .ticks(firstAxis.ticks || 5)
+                        .tickSize(-contentWidth)
+                        .tickFormat(""));
+
+                // Render axes
+                trackSpec.axes.forEach(axis => {
+                    const yScale = scales[axis.position];
+                    const axisClass = `axis ${axis.color ? `axis-${axis.color === '#0077be' ? 'blue' : 'red'}` : ''}`;
+                    
+                    if (axis.position === 'left') {
+                        const axL = g.append("g").attr("class", axisClass)
+                            .call(d3.axisLeft(yScale)
+                                .tickValues(axis.ticks && Array.isArray(axis.ticks) ? axis.ticks : null)
+                                .ticks(axis.ticks && typeof axis.ticks === 'number' ? axis.ticks : 5)
+                                .tickSize(axis.gridLines ? 0 : undefined));
+                        if (axis.label) {
+                            axL.append("text").attr("class", "axis-label")
+                                .attr("transform", "rotate(-90)")
+                                .attr("y", -30)
+                                .attr("x", -height / 2)
+                                .attr("fill", axis.color || "#555")
+                                .text(axis.label);
+                        }
+                    } else if (axis.position === 'right') {
+                        const axR = g.append("g").attr("class", axisClass)
+                            .attr("transform", `translate(${contentWidth}, 0)`)
+                            .call(d3.axisRight(yScale).ticks(axis.ticks || 5));
+                        if (axis.label) {
+                            axR.append("text").attr("class", "axis-label")
+                                .attr("transform", "rotate(90)")
+                                .attr("y", -30)
+                                .attr("x", height / 2)
+                                .attr("fill", axis.color || "#555")
+                                .text(axis.label);
+                        }
+                    }
+                });
+
+                // Legend
+                if (trackSpec.legend) {
+                    const leg = g.append("g").attr("class", "legend").attr("transform", "translate(5,5)");
+                    let offsetX = 0;
+                    trackSpec.legend.items.forEach((item, i) => {
+                        if (item.symbol === "triangle-up") {
+                            leg.append("path").attr("d", d3.symbol().type(d3.symbolTriangle).size(30))
+                                .attr("transform", `translate(${offsetX + 5},5) rotate(180)`)
+                                .attr("fill", item.color);
+                        } else if (item.symbol === "triangle-down") {
+                            leg.append("path").attr("d", d3.symbol().type(d3.symbolTriangle).size(30))
+                                .attr("transform", `translate(${offsetX + 5},5)`)
+                                .attr("fill", item.color);
+                        } else if (item.symbol === "circle") {
+                            leg.append("path").attr("d", d3.symbol().type(d3.symbolCircle).size(25))
+                                .attr("transform", `translate(${offsetX + 5},5)`)
+                                .attr("fill", "white")
+                                .attr("stroke", item.color)
+                                .attr("stroke-width", 2);
+                        }
+                        leg.append("text").attr("x", offsetX + 15).attr("y", 5).text(item.label);
+                        offsetX += item.label.length * 6 + 55;
+                    });
+                }
+
+                // Render series
+                trackSpec.series.forEach(series => {
+                    const yScale = scales[series.axis];
+                    
+                    if (series.type === 'line') {
+                        const lineData = data[series.data];
+                        const line = d3.line()
+                            .x(d => x(d.time))
+                            .y(d => yScale(d.value))
+                            .curve(series.curve === 'monotoneX' ? d3.curveMonotoneX : d3.curveLinear);
+                        
+                        g.append("path")
+                            .datum(lineData)
+                            .attr("fill", "none")
+                            .attr("stroke", series.color)
+                            .attr("stroke-width", series.strokeWidth || 2)
+                            .attr("stroke-dasharray", series.strokeDasharray || null)
+                            .attr("d", line);
+                        
+                        if (series.showPoints) {
+                            g.selectAll(`.dot-${series.data}`)
+                                .data(lineData)
+                                .enter()
+                                .append("circle")
+                                .attr("cx", d => x(d.time))
+                                .attr("cy", d => yScale(d.value))
+                                .attr("r", series.pointStyle?.radius || 3)
+                                .attr("fill", series.pointStyle?.fill || "white")
+                                .attr("stroke", series.pointStyle?.stroke || series.color)
+                                .attr("stroke-width", series.pointStyle?.strokeWidth || 2);
+                        }
+                        
+                        lineData.forEach(d => pushVoronoi(d.time, d.value, currentY, yScale, d, d.type));
+                    } else if (series.type === 'blood-pressure') {
+                        const bpData = data[series.data];
+                        const items = g.selectAll(".bp-group")
+                            .data(bpData)
+                            .enter()
+                            .append("g")
+                            .attr("transform", d => `translate(${x(d.time)},0)`);
+                        
+                        items.append("line")
+                            .attr("y1", d => yScale(d.systolic.value))
+                            .attr("y2", d => yScale(d.diastolic.value))
+                            .attr("stroke", "#555")
+                            .attr("stroke-width", 1)
+                            .attr("stroke-dasharray", "2,2");
+                        
+                        items.append("path")
+                            .attr("d", d3.symbol().type(d3.symbolTriangle).size(60))
+                            .attr("transform", d => `translate(0,${yScale(d.systolic.value)}) rotate(180)`)
+                            .attr("fill", series.systolicColor);
+                        
+                        items.append("path")
+                            .attr("d", d3.symbol().type(d3.symbolTriangle).size(60))
+                            .attr("transform", d => `translate(0,${yScale(d.diastolic.value)})`)
+                            .attr("fill", series.diastolicColor);
+                        
+                        items.append("path")
+                            .attr("d", d3.symbol().type(d3.symbolCircle).size(30))
+                            .attr("transform", d => `translate(0,${yScale(d.pulse.value)})`)
+                            .attr("fill", "white")
+                            .attr("stroke", series.pulseColor)
+                            .attr("stroke-width", 2);
+                        
+                        bpData.forEach(d => {
+                            pushVoronoi(d.time, d.systolic.value, currentY, yScale, d.systolic, "Systolic");
+                            pushVoronoi(d.time, d.diastolic.value, currentY, yScale, d.diastolic, "Diastolic");
+                            pushVoronoi(d.time, d.pulse.value, currentY, yScale, d.pulse, "Pulse");
+                        });
+                    } else if (series.type === 'categorical') {
+                        const catData = data[series.data];
+                        const color = d3.scaleOrdinal()
+                            .domain(series.colorScale.domain)
+                            .range(series.colorScale.range);
+                        const bandHeight = Math.abs(yScale(1) - yScale(2)) * 0.8;
+                        
+                        g.selectAll(".cat")
+                            .data(catData)
+                            .enter()
+                            .append("rect")
+                            .attr("x", d => x(d.time) - series.barWidth / 2)
+                            .attr("y", d => yScale(d.value) - bandHeight / 2)
+                            .attr("width", series.barWidth)
+                            .attr("height", bandHeight)
+                            .attr("fill", d => color(d.value))
+                            .attr("rx", series.barRadius);
+                        
+                        catData.forEach(d => pushVoronoi(d.time, d.value, currentY, yScale, d, d.type));
+                    }
+                });
+
+                currentY += height + trackGaps;
+            });
+
+            // --- X Axis (from mockup) ---
+            const axisY = currentY + axisGap;
+            svg.append("line").attr("x1", 0).attr("y1", axisY).attr("x2", contentWidth).attr("y2", axisY).attr("stroke", "#ddd");
+            const xAxisG = svg.append("g").attr("transform", `translate(0, ${axisY})`).attr("class", "axis");
+            const hourlyTicks = x.ticks(d3.timeHour.every(1));
+
+            const tg = xAxisG.selectAll(".tick-label").data(hourlyTicks).enter().append("g").attr("transform", d => `translate(${x(d)}, 0)`);
+            tg.append("line").attr("y1", 0).attr("y2", 5).attr("stroke", "#ddd");
+            
+            tg.each(function (d) {
+                if (d.getHours() % 3 === 0) {
+                    d3.select(this).append("text")
+                        .attr("text-anchor", "middle").attr("y", 15).attr("font-size", "10px").attr("fill", "#444")
+                        .text(d3.timeFormat("%H:%M")(d));
+                }
+            });
+
+            // Date Labels (Midnight & Sticky Left)
+            const dateStr = d3.timeFormat("%a %Y-%m-%d");
+            let stickyNeeded = true;
+            tg.each(function (d) {
+                if (d.getHours() === 0) {
+                    stickyNeeded = x(d) > 80;
+                    const w = 100;
+                    const g = d3.select(this).append("g").attr("transform", `translate(0, 18)`);
+                    const lineBottom = fullHeight - margin.top - (axisY + 18);
+                    g.append("line")
+                        .attr("x1", 0).attr("y1", -12)
+                        .attr("x2", 0).attr("y2", lineBottom)
+                        .attr("stroke", "#ddd").attr("stroke-width", 1);
+
+                    const arrowPath = `M0,0 L${w - 10},0 L${w},9 L${w - 10},18 L0,18 Z`;
+                    g.append("path").attr("d", arrowPath).attr("fill", "#eef").style("stroke", "none");
+                    g.append("text").attr("x", 5).attr("y", 12).attr("font-size", "10px").attr("fill", "#446").attr("font-weight", "bold").text(dateStr(d));
+
+                    if (x(d) < w + 10) stickyNeeded = false;
+                }
+            });
+
+            if (stickyNeeded) {
+                const startD = x.domain()[0];
+                const stickyG = xAxisG.append("g").attr("transform", `translate(0, 18)`);
+                const w = 100;
+                const arrowPathFixed = `M0,0 L${w - 10},0 L${w},9 L${w - 10},18 L0,18 Z`;
+                stickyG.append("path").attr("d", arrowPathFixed).attr("fill", "url(#fade-left)").style("stroke", "none");
+                stickyG.append("text").attr("x", 5).attr("y", 12).attr("font-size", "10px").attr("fill", "#446").attr("font-weight", "bold").text(dateStr(startD));
+                stickyG.lower();
+            }
+
+            // --- Crosshair ---
+            const crosshair = svg.append("line")
+                .attr("class", "crosshair")
+                .attr("y1", 0)
+                .attr("y2", axisY);
+
+            // --- Voronoi Interaction (from mockup) ---
+            const delaunay = d3.Delaunay.from(voronoiPoints, d => d.x, d => d.y);
+            const tooltip = d3.select("#tooltip");
+            const highlighter = svg.append("circle").attr("r", 8).attr("fill", "none").attr("stroke", "#333").attr("stroke-width", 2).attr("stroke-opacity", 0.5).style("opacity", 0).style("pointer-events", "none");
+
+            svg.append("rect")
+                .attr("width", contentWidth)
+                .attr("height", axisY)
+                .attr("fill", "transparent")
+                .on("mousemove", (event) => {
+                    const [mx, my] = d3.pointer(event);
+                    crosshair.attr("x1", mx).attr("x2", mx).style("opacity", 0.8);
+
+                    const index = delaunay.find(mx, my);
+                    if (index !== null) {
+                        const d = voronoiPoints[index];
+                        if (Math.hypot(mx - d.x, my - d.y) < 50) {
+                            highlighter.attr("cx", d.x).attr("cy", d.y).style("opacity", 1);
+
+                            const bounds = document.getElementById("chart-container").getBoundingClientRect();
+                            const absX = bounds.left + margin.left + d.x;
+                            const absY = bounds.top + margin.top + d.y;
+                            let valStr = typeof d.data.value === 'number' ? d.data.value.toFixed(d.label === 'Wellbeing' ? 0 : 1) : d.data.value;
+
+                            tooltip.style("opacity", 0.95)
+                                .html(`<strong>${d.label}</strong><br>${formatFullTime(d.time)}<br>${valStr} ${d.data.unit}`)
+                                .style("left", (absX + 15) + "px")
+                                .style("top", (absY - 28) + "px");
+                        } else {
+                            highlighter.style("opacity", 0);
+                            tooltip.style("opacity", 0);
+                        }
+                    }
+                })
+                .on("mouseleave", () => {
+                    highlighter.style("opacity", 0);
+                    tooltip.style("opacity", 0);
+                    crosshair.style("opacity", 0);
+                });
+        }
+
+        // --- Resize Observer (from mockup) ---
+        const container = document.getElementById('chart-container');
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const { width, height } = entry.contentRect;
+                if (width > 0 && height > 0) {
+                    renderChart(width, height);
+                }
+            }
+        });
+        resizeObserver.observe(container);
+    </script>
+</body>
+</html>
