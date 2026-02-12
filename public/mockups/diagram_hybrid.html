@@ -136,7 +136,7 @@
             "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
             "description": "Health metrics visualization with responsive design and Voronoi interactions",
             "config": {
-                "margin": { "top": 20, "right": 40, "bottom": 40, "left": 40 },
+                "margin": { "top": 20, "right": 40, "bottom": 70, "left": 40 },
                 "trackGaps": 20,
                 "axisGap": 10
             },
@@ -257,6 +257,7 @@
             const now = new Date();
             const hours = config.data.hours || 60;
             const times = d3.range(hours).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
+            const fewerTimes = d3.range(0, hours, 4).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
 
             const tempData = times.map(t => ({
                 time: t, value: 36.5 + Math.sin(t.getTime() / 10000000) + Math.random() * 0.5, 
@@ -270,17 +271,21 @@
                 return { time: t, value: val, unit: '%', type: 'SpO2' };
             });
 
-            const bpData = times.map((t) => {
+            const bpData = fewerTimes.map((t) => {
                 if (Math.random() > 0.4) return null;
                 const sys = Math.round(120 + Math.random() * 20 - 10);
                 const dia = Math.round(80 + Math.random() * 10 - 5);
-                const pulseVal = Math.round(70 + Math.random() * 15);
                 return {
                     time: t,
                     systolic: { value: sys, unit: 'mm[Hg]', type: 'Systolic' },
                     diastolic: { value: dia, unit: 'mm[Hg]', type: 'Diastolic' },
-                    pulse: { value: pulseVal, unit: '/min', type: 'Pulse' },
                 };
+            }).filter(d => d);
+
+            const pulseData = times.map((t) => {
+                if (Math.random() > 0.2) return null;
+                const pulseVal = Math.round(70 + Math.random() * 15);
+                return { time: t, value: pulseVal, unit: '/min', type: 'Pulse' };
             }).filter(d => d);
 
             const wellbeingData = times.map(t => {
@@ -288,7 +293,7 @@
                 return { time: t, value: Math.floor(Math.random() * 5) + 1, unit: 'score', type: 'Wellbeing' };
             }).filter(d => d);
 
-            return { temp: tempData, spo2: spo2Data, bp: bpData, wellbeing: wellbeingData, times };
+            return { temp: tempData, spo2: spo2Data, bp: bpData, pulse: pulseData, wellbeing: wellbeingData, times };
         }
 
         // ============================================================================
@@ -473,6 +478,7 @@
                         lineData.forEach(d => pushVoronoi(d.time, d.value, currentY, yScale, d, d.type));
                     } else if (series.type === 'blood-pressure') {
                         const bpData = data[series.data];
+                        const pulseData = data.pulse;
                         const items = g.selectAll(".bp-group")
                             .data(bpData)
                             .enter()
@@ -498,9 +504,13 @@
                             .attr("stroke", series.diastolicColor)
                             .attr("stroke-width", 2);
                         
-                        items.append("path")
+                        g.selectAll(".pulse-point")
+                            .data(pulseData)
+                            .enter()
+                            .append("path")
+                            .attr("class", "pulse-point")
                             .attr("d", d3.symbol().type(d3.symbolCircle).size(30))
-                            .attr("transform", d => `translate(0,${yScale(d.pulse.value)})`)
+                            .attr("transform", d => `translate(${x(d.time)},${yScale(d.value)})`)
                             .attr("fill", "white")
                             .attr("stroke", series.pulseColor)
                             .attr("stroke-width", 2);
@@ -508,7 +518,10 @@
                         bpData.forEach(d => {
                             pushVoronoi(d.time, d.systolic.value, currentY, yScale, d.systolic, "Systolic");
                             pushVoronoi(d.time, d.diastolic.value, currentY, yScale, d.diastolic, "Diastolic");
-                            pushVoronoi(d.time, d.pulse.value, currentY, yScale, d.pulse, "Pulse");
+                        });
+
+                        pulseData.forEach(d => {
+                            pushVoronoi(d.time, d.value, currentY, yScale, d, "Pulse");
                         });
                     } else if (series.type === 'categorical') {
                         const catData = data[series.data];
