@@ -182,21 +182,12 @@
                     "width": "container",
                     "data": { "values": bpData },
                     "layer": [
-                        // BP Connector Line
+                        // Systolic V
                         {
-                            "mark": { "type": "rule", "color": "#555", "strokeDash": [2, 2] },
-                            "encoding": {
-                                "x": { "field": "time", "type": "temporal", "axis": null },
-                                "y": { "field": "systolic", "type": "quantitative", "scale": { "domain": [40, 160] }, "axis": { "title": "BP / Pulse", "orient": "left" } },
-                                "y2": { "field": "diastolic" }
-                            }
-                        },
-                        // Systolic Triangle
-                        {
-                            "mark": { "type": "point", "shape": "triangle-down", "fill": "#457b9d", "size": 150, "opacity": 1 },
+                            "mark": { "type": "text", "text": "V", "fontSize": 18, "fontWeight": "bold", "color": "#457b9d", "align": "center", "baseline": "bottom" },
                             "encoding": {
                                 "x": { "field": "time", "type": "temporal" },
-                                "y": { "field": "systolic", "type": "quantitative" },
+                                "y": { "field": "systolic", "type": "quantitative", "axis": { "title": "BP / Pulse", "orient": "left" } },
                                 "tooltip": [
                                     { "datum": "Systolic", "title": "Type" },
                                     { "field": "time", "title": "Time", "type": "temporal", "format": "%Y-%m-%d %H:%M", "formatType": "time" },
@@ -205,9 +196,9 @@
                                 ]
                             }
                         },
-                        // Diastolic Triangle
+                        // Diastolic inverted V
                         {
-                            "mark": { "type": "point", "shape": "triangle-up", "fill": "#1d3557", "size": 150, "opacity": 1 },
+                            "mark": { "type": "text", "text": "V", "fontSize": 18, "fontWeight": "bold", "color": "#1d3557", "align": "center", "baseline": "top", "angle": 180 },
                             "encoding": {
                                 "x": { "field": "time", "type": "temporal" },
                                 "y": { "field": "diastolic", "type": "quantitative" },

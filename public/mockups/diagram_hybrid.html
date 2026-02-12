@@ -205,8 +205,8 @@
                     ],
                     "legend": {
                         "items": [
-                            {"symbol": "triangle-up", "color": "#457b9d", "label": "Systolic"},
-                            {"symbol": "triangle-down", "color": "#1d3557", "label": "Diastolic"},
+                            {"symbol": "v", "color": "#457b9d", "label": "Systolic"},
+                            {"symbol": "v-inv", "color": "#1d3557", "label": "Diastolic"},
                             {"symbol": "circle", "color": "#e63946", "label": "Pulse"}
                         ]
                     },
@@ -408,14 +408,24 @@
                     const leg = g.append("g").attr("class", "legend").attr("transform", "translate(5,5)");
                     let offsetX = 0;
                     trackSpec.legend.items.forEach((item, i) => {
-                        if (item.symbol === "triangle-up") {
-                            leg.append("path").attr("d", d3.symbol().type(d3.symbolTriangle).size(30))
-                                .attr("transform", `translate(${offsetX + 5},5) rotate(180)`)
-                                .attr("fill", item.color);
-                        } else if (item.symbol === "triangle-down") {
-                            leg.append("path").attr("d", d3.symbol().type(d3.symbolTriangle).size(30))
+                        if (item.symbol === "v") {
+                            const vWidth = 6;
+                            const vHeight = 6;
+                            const vPath = `M ${-vWidth},${-vHeight} L 0,0 L ${vWidth},${-vHeight}`;
+                            leg.append("path").attr("d", vPath)
                                 .attr("transform", `translate(${offsetX + 5},5)`)
-                                .attr("fill", item.color);
+                                .attr("fill", "none")
+                                .attr("stroke", item.color)
+                                .attr("stroke-width", 2);
+                        } else if (item.symbol === "v-inv") {
+                            const vWidth = 6;
+                            const vHeight = 6;
+                            const vPath = `M ${-vWidth},${vHeight} L 0,0 L ${vWidth},${vHeight}`;
+                            leg.append("path").attr("d", vPath)
+                                .attr("transform", `translate(${offsetX + 5},5)`)
+                                .attr("fill", "none")
+                                .attr("stroke", item.color)
+                                .attr("stroke-width", 2);
                         } else if (item.symbol === "circle") {
                             leg.append("path").attr("d", d3.symbol().type(d3.symbolCircle).size(25))
                                 .attr("transform", `translate(${offsetX + 5},5)`)
@@ -468,23 +478,25 @@
                             .enter()
                             .append("g")
                             .attr("transform", d => `translate(${x(d.time)},0)`);
-                        
-                        items.append("line")
-                            .attr("y1", d => yScale(d.systolic.value))
-                            .attr("y2", d => yScale(d.diastolic.value))
-                            .attr("stroke", "#555")
-                            .attr("stroke-width", 1)
-                            .attr("stroke-dasharray", "2,2");
-                        
+
+                        const vWidth = 8;
+                        const vHeight = 6;
+                        const vPath = `M ${-vWidth},${-vHeight} L 0,0 L ${vWidth},${-vHeight}`;
+                        const vInvPath = `M ${-vWidth},${vHeight} L 0,0 L ${vWidth},${vHeight}`;
+
                         items.append("path")
-                            .attr("d", d3.symbol().type(d3.symbolTriangle).size(60))
-                            .attr("transform", d => `translate(0,${yScale(d.systolic.value)}) rotate(180)`)
-                            .attr("fill", series.systolicColor);
-                        
+                            .attr("d", vPath)
+                            .attr("transform", d => `translate(0,${yScale(d.systolic.value)})`)
+                            .attr("fill", "none")
+                            .attr("stroke", series.systolicColor)
+                            .attr("stroke-width", 2);
+
                         items.append("path")
-                            .attr("d", d3.symbol().type(d3.symbolTriangle).size(60))
+                            .attr("d", vInvPath)
                             .attr("transform", d => `translate(0,${yScale(d.diastolic.value)})`)
-                            .attr("fill", series.diastolicColor);
+                            .attr("fill", "none")
+                            .attr("stroke", series.diastolicColor)
+                            .attr("stroke-width", 2);
                         
                         items.append("path")
                             .attr("d", d3.symbol().type(d3.symbolCircle).size(30))
