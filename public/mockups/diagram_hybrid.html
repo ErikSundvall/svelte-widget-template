@@ -475,6 +475,10 @@
                 trackSpec.series.forEach(series => {
                     const yScale = scales[series.axis];
                     
+                    // Constants for V-shape markers
+                    const V_MARKER_WIDTH = 8;
+                    const V_MARKER_HEIGHT = 6;
+                    
                     if (series.type === 'line') {
                         const lineData = data[series.data];
                         const line = d3.line()
@@ -508,9 +512,7 @@
                         const pointData = data[series.data];
                         
                         if (series.symbol === 'v') {
-                            const vWidth = 8;
-                            const vHeight = 6;
-                            const vPath = `M ${-vWidth},${-vHeight} L 0,0 L ${vWidth},${-vHeight}`;
+                            const vPath = `M ${-V_MARKER_WIDTH},${-V_MARKER_HEIGHT} L 0,0 L ${V_MARKER_WIDTH},${-V_MARKER_HEIGHT}`;
                             
                             g.selectAll(`.point-${series.data}`)
                                 .data(pointData)
@@ -525,9 +527,11 @@
                             // Draw connecting lines if connectTo is specified
                             if (series.connectTo) {
                                 const connectData = data[series.connectTo];
-                                // Match points by time and draw lines
+                                // Build a map for O(1) lookups by timestamp
+                                const connectMap = new Map(connectData.map(d => [d.time.getTime(), d]));
+                                
                                 pointData.forEach(sysPoint => {
-                                    const diaPoint = connectData.find(d => d.time.getTime() === sysPoint.time.getTime());
+                                    const diaPoint = connectMap.get(sysPoint.time.getTime());
                                     if (diaPoint) {
                                         g.append("line")
                                             .attr("x1", x(sysPoint.time))
@@ -541,9 +545,7 @@
                                 });
                             }
                         } else if (series.symbol === 'v-inv') {
-                            const vWidth = 8;
-                            const vHeight = 6;
-                            const vInvPath = `M ${-vWidth},${vHeight} L 0,0 L ${vWidth},${vHeight}`;
+                            const vInvPath = `M ${-V_MARKER_WIDTH},${V_MARKER_HEIGHT} L 0,0 L ${V_MARKER_WIDTH},${V_MARKER_HEIGHT}`;
                             
                             g.selectAll(`.point-${series.data}`)
                                 .data(pointData)
