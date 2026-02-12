@@ -212,12 +212,27 @@
                     },
                     "series": [
                         {
-                            "type": "blood-pressure",
-                            "data": "bp",
+                            "type": "point",
+                            "data": "systolic",
                             "axis": "left",
-                            "systolicColor": "#457b9d",
-                            "diastolicColor": "#1d3557",
-                            "pulseColor": "#e63946"
+                            "color": "#457b9d",
+                            "symbol": "v",
+                            "connectTo": "diastolic"
+                        },
+                        {
+                            "type": "point",
+                            "data": "diastolic",
+                            "axis": "left",
+                            "color": "#1d3557",
+                            "symbol": "v-inv"
+                        },
+                        {
+                            "type": "point",
+                            "data": "pulse",
+                            "axis": "left",
+                            "color": "#e63946",
+                            "symbol": "circle",
+                            "hollow": true
                         }
                     ]
                 },
@@ -271,16 +286,18 @@
                 return { time: t, value: val, unit: '%', type: 'SpO2' };
             });
 
-            const bpData = fewerTimes.map((t) => {
-                if (Math.random() > 0.4) return null;
+            // Separate arrays for systolic and diastolic - same timepoints
+            const bpTimepoints = fewerTimes.filter(() => Math.random() <= 0.6);
+            
+            const systolicData = bpTimepoints.map((t) => {
                 const sys = Math.round(120 + Math.random() * 20 - 10);
+                return { time: t, value: sys, unit: 'mm[Hg]', type: 'Systolic' };
+            });
+
+            const diastolicData = bpTimepoints.map((t) => {
                 const dia = Math.round(80 + Math.random() * 10 - 5);
-                return {
-                    time: t,
-                    systolic: { value: sys, unit: 'mm[Hg]', type: 'Systolic' },
-                    diastolic: { value: dia, unit: 'mm[Hg]', type: 'Diastolic' },
-                };
-            }).filter(d => d);
+                return { time: t, value: dia, unit: 'mm[Hg]', type: 'Diastolic' };
+            });
 
             const pulseData = times.map((t) => {
                 if (Math.random() > 0.2) return null;
@@ -293,7 +310,7 @@
                 return { time: t, value: Math.floor(Math.random() * 5) + 1, unit: 'score', type: 'Wellbeing' };
             }).filter(d => d);
 
-            return { temp: tempData, spo2: spo2Data, bp: bpData, pulse: pulseData, wellbeing: wellbeingData, times };
+            return { temp: tempData, spo2: spo2Data, systolic: systolicData, diastolic: diastolicData, pulse: pulseData, wellbeing: wellbeingData, times };
         }
 
         // ============================================================================
@@ -476,53 +493,69 @@
                         }
                         
                         lineData.forEach(d => pushVoronoi(d.time, d.value, currentY, yScale, d, d.type));
-                    } else if (series.type === 'blood-pressure') {
-                        const bpData = data[series.data];
-                        const pulseData = data.pulse;
-                        const items = g.selectAll(".bp-group")
-                            .data(bpData)
-                            .enter()
-                            .append("g")
-                            .attr("transform", d => `translate(${x(d.time)},0)`);
-
-                        const vWidth = 8;
-                        const vHeight = 6;
-                        const vPath = `M ${-vWidth},${-vHeight} L 0,0 L ${vWidth},${-vHeight}`;
-                        const vInvPath = `M ${-vWidth},${vHeight} L 0,0 L ${vWidth},${vHeight}`;
-
-                        items.append("path")
-                            .attr("d", vPath)
-                            .attr("transform", d => `translate(0,${yScale(d.systolic.value)})`)
-                            .attr("fill", "none")
-                            .attr("stroke", series.systolicColor)
-                            .attr("stroke-width", 2);
-
-                        items.append("path")
-                            .attr("d", vInvPath)
-                            .attr("transform", d => `translate(0,${yScale(d.diastolic.value)})`)
-                            .attr("fill", "none")
-                            .attr("stroke", series.diastolicColor)
-                            .attr("stroke-width", 2);
+                    } else if (series.type === 'point') {
+                        const pointData = data[series.data];
                         
-                        g.selectAll(".pulse-point")
-                            .data(pulseData)
-                            .enter()
-                            .append("path")
-                            .attr("class", "pulse-point")
-                            .attr("d", d3.symbol().type(d3.symbolCircle).size(30))
-                            .attr("transform", d => `translate(${x(d.time)},${yScale(d.value)})`)
-                            .attr("fill", "white")
-                            .attr("stroke", series.pulseColor)
-                            .attr("stroke-width", 2);
+                        if (series.symbol === 'v') {
+                            const vWidth = 8;
+                            const vHeight = 6;
+                            const vPath = `M ${-vWidth},${-vHeight} L 0,0 L ${vWidth},${-vHeight}`;
+                            
+                            g.selectAll(`.point-${series.data}`)
+                                .data(pointData)
+                                .enter()
+                                .append("path")
+                                .attr("d", vPath)
+                                .attr("transform", d => `translate(${x(d.time)},${yScale(d.value)})`)
+                                .attr("fill", "none")
+                                .attr("stroke", series.color)
+                                .attr("stroke-width", 2);
+                            
+                            // Draw connecting lines if connectTo is specified
+                            if (series.connectTo) {
+                                const connectData = data[series.connectTo];
+                                // Match points by time and draw lines
+                                pointData.forEach(sysPoint => {
+                                    const diaPoint = connectData.find(d => d.time.getTime() === sysPoint.time.getTime());
+                                    if (diaPoint) {
+                                        g.append("line")
+                                            .attr("x1", x(sysPoint.time))
+                                            .attr("y1", yScale(sysPoint.value))
+                                            .attr("x2", x(diaPoint.time))
+                                            .attr("y2", yScale(diaPoint.value))
+                                            .attr("stroke", "#999")
+                                            .attr("stroke-width", 1)
+                                            .attr("stroke-dasharray", "3,3");
+                                    }
+                                });
+                            }
+                        } else if (series.symbol === 'v-inv') {
+                            const vWidth = 8;
+                            const vHeight = 6;
+                            const vInvPath = `M ${-vWidth},${vHeight} L 0,0 L ${vWidth},${vHeight}`;
+                            
+                            g.selectAll(`.point-${series.data}`)
+                                .data(pointData)
+                                .enter()
+                                .append("path")
+                                .attr("d", vInvPath)
+                                .attr("transform", d => `translate(${x(d.time)},${yScale(d.value)})`)
+                                .attr("fill", "none")
+                                .attr("stroke", series.color)
+                                .attr("stroke-width", 2);
+                        } else if (series.symbol === 'circle') {
+                            g.selectAll(`.point-${series.data}`)
+                                .data(pointData)
+                                .enter()
+                                .append("path")
+                                .attr("d", d3.symbol().type(d3.symbolCircle).size(30))
+                                .attr("transform", d => `translate(${x(d.time)},${yScale(d.value)})`)
+                                .attr("fill", series.hollow ? "white" : series.color)
+                                .attr("stroke", series.color)
+                                .attr("stroke-width", 2);
+                        }
                         
-                        bpData.forEach(d => {
-                            pushVoronoi(d.time, d.systolic.value, currentY, yScale, d.systolic, "Systolic");
-                            pushVoronoi(d.time, d.diastolic.value, currentY, yScale, d.diastolic, "Diastolic");
-                        });
-
-                        pulseData.forEach(d => {
-                            pushVoronoi(d.time, d.value, currentY, yScale, d, "Pulse");
-                        });
+                        pointData.forEach(d => pushVoronoi(d.time, d.value, currentY, yScale, d, d.type));
                     } else if (series.type === 'categorical') {
                         const catData = data[series.data];
                         const color = d3.scaleOrdinal()
