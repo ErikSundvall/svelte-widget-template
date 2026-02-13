@@ -101,6 +101,16 @@
             opacity: 0.5;
         }
 
+        .axis.axis-green text {
+            fill: #06a77d;
+        }
+
+        .axis.axis-green path,
+        .axis.axis-green line {
+            stroke: #06a77d;
+            opacity: 0.5;
+        }
+
         .axis-label {
             font-size: 11px;
             font-weight: bold;
@@ -158,21 +168,14 @@
             },
             "tracks": [
                 {
-                    "weight": 1,
-                    "title": "Temperature & SpO2",
+                    "weight": 0.7,
+                    "title": "Temperature",
                     "axes": [
                         {
                             "position": "left",
                             "domain": [35, 42],
                             "label": "Temp °C",
                             "color": "#e63946",
-                            "ticks": 5
-                        },
-                        {
-                            "position": "right",
-                            "domain": [80, 100],
-                            "label": "SpO2 %",
-                            "color": "#0077be",
                             "ticks": 5
                         }
                     ],
@@ -188,6 +191,43 @@
                             "pointStyle": {
                                 "fill": "white",
                                 "stroke": "#e63946",
+                                "strokeWidth": 2,
+                                "radius": 3
+                            }
+                        }
+                    ]
+                },
+                {
+                    "weight": 1,
+                    "title": "Oxygenation & Respiration",
+                    "axes": [
+                        {
+                            "position": "left",
+                            "domain": [10, 30],
+                            "label": "Resp /min",
+                            "color": "#06a77d",
+                            "ticks": 5
+                        },
+                        {
+                            "position": "right",
+                            "domain": [80, 100],
+                            "label": "SpO2 %",
+                            "color": "#0077be",
+                            "ticks": 5
+                        }
+                    ],
+                    "series": [
+                        {
+                            "type": "line",
+                            "data": "respiration",
+                            "axis": "left",
+                            "color": "#06a77d",
+                            "strokeWidth": 2,
+                            "curve": "monotoneX",
+                            "showPoints": true,
+                            "pointStyle": {
+                                "fill": "white",
+                                "stroke": "#06a77d",
                                 "strokeWidth": 2,
                                 "radius": 3
                             }
@@ -218,7 +258,8 @@
                         "items": [
                             {"symbol": "v", "color": "#457b9d", "label": "Systolic"},
                             {"symbol": "v-inv", "color": "#1d3557", "label": "Diastolic"},
-                            {"symbol": "circle", "color": "#e63946", "label": "Pulse"}
+                            {"symbol": "circle", "color": "#e63946", "label": "Pulse (BP)"},
+                            {"symbol": "circle-filled", "color": "#e63946", "label": "Pulse (Oximeter)"}
                         ]
                     },
                     "series": [
@@ -239,11 +280,19 @@
                         },
                         {
                             "type": "point",
-                            "data": "pulse",
+                            "data": "pulseBP",
                             "axis": "left",
                             "color": "#e63946",
                             "symbol": "circle",
                             "hollow": true
+                        },
+                        {
+                            "type": "point",
+                            "data": "pulseOx",
+                            "axis": "left",
+                            "color": "#e63946",
+                            "symbol": "circle",
+                            "hollow": false
                         }
                     ]
                 },
@@ -285,19 +334,35 @@
             const times = d3.range(hours).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
             const fewerTimes = d3.range(0, hours, 4).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
 
+            // Temperature with reduced variation - more realistic
             const tempData = times.map(t => ({
-                time: t, value: 36.5 + Math.sin(t.getTime() / 10000000) + Math.random() * 0.5, 
-                unit: '°C', type: 'Temp'
+                time: t, 
+                value: 36.8 + Math.sin(t.getTime() / 20000000) * 0.3 + (Math.random() * 0.2 - 0.1), 
+                unit: '°C', 
+                type: 'Temp'
             }));
 
-            const spo2Data = times.map(t => {
-                let val = 94 + Math.random() * 5; 
-                if (Math.random() < 0.1) val -= Math.random() * 10; 
-                val = Math.max(80, Math.min(100, val));
+            // Pulse oximeter measurements - done at same time
+            const oximeterTimepoints = times.filter(() => Math.random() <= 0.2);
+            
+            const spo2Data = oximeterTimepoints.map(t => {
+                let val = 96 + Math.random() * 3; 
+                if (Math.random() < 0.05) val -= Math.random() * 8; 
+                val = Math.max(88, Math.min(100, val));
                 return { time: t, value: val, unit: '%', type: 'SpO2' };
             });
 
-            // Separate arrays for systolic and diastolic - same timepoints
+            const respirationData = oximeterTimepoints.map(t => {
+                const respVal = Math.round(16 + Math.random() * 6 - 3);
+                return { time: t, value: respVal, unit: '/min', type: 'Respiration' };
+            });
+
+            const pulseOxData = oximeterTimepoints.map(t => {
+                const pulseVal = Math.round(72 + Math.random() * 12 - 6);
+                return { time: t, value: pulseVal, unit: '/min', type: 'Pulse (Oximeter)' };
+            });
+
+            // Blood pressure measurements - separate timing, includes pulse from BP machine
             const bpTimepoints = fewerTimes.filter(() => Math.random() <= 0.6);
             
             const systolicData = bpTimepoints.map((t) => {
@@ -310,18 +375,27 @@
                 return { time: t, value: dia, unit: 'mm[Hg]', type: 'Diastolic' };
             });
 
-            const pulseData = times.map((t) => {
-                if (Math.random() > 0.2) return null;
-                const pulseVal = Math.round(70 + Math.random() * 15);
-                return { time: t, value: pulseVal, unit: '/min', type: 'Pulse' };
-            }).filter(d => d);
+            const pulseBPData = bpTimepoints.map((t) => {
+                const pulseVal = Math.round(75 + Math.random() * 10 - 5);
+                return { time: t, value: pulseVal, unit: '/min', type: 'Pulse (BP)' };
+            });
 
             const wellbeingData = times.map(t => {
                 if (Math.random() > 0.4) return null;
                 return { time: t, value: Math.floor(Math.random() * 5) + 1, unit: 'score', type: 'Wellbeing' };
             }).filter(d => d);
 
-            return { temp: tempData, spo2: spo2Data, systolic: systolicData, diastolic: diastolicData, pulse: pulseData, wellbeing: wellbeingData, times };
+            return { 
+                temp: tempData, 
+                spo2: spo2Data, 
+                respiration: respirationData,
+                systolic: systolicData, 
+                diastolic: diastolicData, 
+                pulseBP: pulseBPData,
+                pulseOx: pulseOxData,
+                wellbeing: wellbeingData, 
+                times 
+            };
         }
 
         // ============================================================================
@@ -405,7 +479,11 @@
                 // Render axes
                 trackSpec.axes.forEach(axis => {
                     const yScale = scales[axis.position];
-                    const axisClass = `axis ${axis.color ? `axis-${axis.color === '#0077be' ? 'blue' : 'red'}` : ''}`;
+                    let colorClass = '';
+                    if (axis.color === '#0077be') colorClass = 'blue';
+                    else if (axis.color === '#e63946') colorClass = 'red';
+                    else if (axis.color === '#06a77d') colorClass = 'green';
+                    const axisClass = `axis ${colorClass ? `axis-${colorClass}` : ''}`;
                     
                     if (axis.position === 'left') {
                         const axL = g.append("g").attr("class", axisClass)
@@ -463,6 +541,12 @@
                             leg.append("path").attr("d", d3.symbol().type(d3.symbolCircle).size(25))
                                 .attr("transform", `translate(${offsetX + 5},5)`)
                                 .attr("fill", "white")
+                                .attr("stroke", item.color)
+                                .attr("stroke-width", 2);
+                        } else if (item.symbol === "circle-filled") {
+                            leg.append("path").attr("d", d3.symbol().type(d3.symbolCircle).size(25))
+                                .attr("transform", `translate(${offsetX + 5},5)`)
+                                .attr("fill", item.color)
                                 .attr("stroke", item.color)
                                 .attr("stroke-width", 2);
                         }
