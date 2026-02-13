@@ -344,46 +344,51 @@
 
             // Pulse oximeter measurements - dense when monitoring, with gaps during meals/breaks
             // Generate monitoring periods with 5-minute intervals, interspersed with gaps
-            const oximeterTimepoints = [];
+            const oximeterMeasurements = { spo2: [], respiration: [], pulse: [] };
             let currentTime = 0;
             
             while (currentTime < hours) {
-                // Monitoring period: 30-120 minutes of continuous monitoring
-                const monitoringDuration = 30 + Math.floor(Math.random() * 90);
+                // Monitoring period: 1-3 hours of continuous monitoring
+                const monitoringDuration = 60 + Math.floor(Math.random() * 120);
                 const monitoringEnd = Math.min(currentTime + monitoringDuration, hours);
                 
-                // Add measurements every 5 minutes during monitoring
+                // Initialize baseline values for this monitoring period
+                const baseSpo2 = 95 + Math.random() * 3;
+                const baseResp = 14 + Math.floor(Math.random() * 4);
+                const basePulse = 68 + Math.floor(Math.random() * 8);
+                
+                // Add measurements every 5 minutes during monitoring with small variations
                 for (let i = currentTime; i < monitoringEnd; i += 5/60) {
                     if (i < hours) {
-                        oximeterTimepoints.push(new Date(now.getTime() - (hours - i) * 3600 * 1000));
+                        const t = new Date(now.getTime() - (hours - i) * 3600 * 1000);
+                        
+                        // Small random walk within the period
+                        let spo2Val = baseSpo2 + (Math.random() - 0.5) * 2;
+                        spo2Val = Math.max(90, Math.min(100, spo2Val));
+                        oximeterMeasurements.spo2.push({ time: t, value: spo2Val, unit: '%', type: 'SpO2' });
+                        
+                        let respVal = baseResp + Math.floor((Math.random() - 0.5) * 4);
+                        respVal = Math.max(10, Math.min(30, respVal));
+                        oximeterMeasurements.respiration.push({ time: t, value: respVal, unit: '/min', type: 'Respiration' });
+                        
+                        let pulseVal = basePulse + Math.floor((Math.random() - 0.5) * 6);
+                        pulseVal = Math.max(60, Math.min(90, pulseVal));
+                        oximeterMeasurements.pulse.push({ time: t, value: pulseVal, unit: '/min', type: 'Pulse (Oximeter)' });
                     }
                 }
                 
                 currentTime = monitoringEnd;
                 
-                // Gap period: 30-120 minutes (meals, breaks, etc.)
+                // Gap period: 1-2 hours (meals, breaks, etc.)
                 if (currentTime < hours) {
-                    const gapDuration = 30 + Math.floor(Math.random() * 90);
+                    const gapDuration = 60 + Math.floor(Math.random() * 60);
                     currentTime += gapDuration;
                 }
             }
             
-            const spo2Data = oximeterTimepoints.map(t => {
-                let val = 96 + Math.random() * 3; 
-                if (Math.random() < 0.05) val -= Math.random() * 8; 
-                val = Math.max(88, Math.min(100, val));
-                return { time: t, value: val, unit: '%', type: 'SpO2' };
-            });
-
-            const respirationData = oximeterTimepoints.map(t => {
-                const respVal = Math.round(13 + Math.random() * 6);
-                return { time: t, value: respVal, unit: '/min', type: 'Respiration' };
-            });
-
-            const pulseOxData = oximeterTimepoints.map(t => {
-                const pulseVal = Math.round(66 + Math.random() * 12);
-                return { time: t, value: pulseVal, unit: '/min', type: 'Pulse (Oximeter)' };
-            });
+            const spo2Data = oximeterMeasurements.spo2;
+            const respirationData = oximeterMeasurements.respiration;
+            const pulseOxData = oximeterMeasurements.pulse;
 
             // Blood pressure measurements - separate timing, includes pulse from BP machine
             const bpTimepoints = fewerTimes.filter(() => Math.random() <= 0.6);
