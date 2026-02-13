@@ -7,6 +7,7 @@
     <title>Hybrid Vega Lite Config + D3 Rendering Diagram</title>
     <script src="../js/lib/d3.v7.min.js"></script>
     <style>
+        /* Layout and container styles */
         html,
         body {
             width: 100%;
@@ -47,14 +48,10 @@
             width: 100%;
         }
 
+        /* Tooltip styles - position and layout only, colors from config */
         .tooltip {
             position: absolute;
             text-align: left;
-            padding: 8px;
-            font-size: 11px;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            border-radius: 4px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
@@ -63,24 +60,13 @@
             line-height: 1.4;
         }
 
+        /* Crosshair - opacity and pointer events only, stroke from config */
         .crosshair {
-            stroke: #999;
-            stroke-width: 1;
-            stroke-dasharray: 4, 2;
             pointer-events: none;
             opacity: 0;
         }
 
-        .axis text {
-            font-size: 10px;
-            fill: #666;
-        }
-
-        .axis path,
-        .axis line {
-            stroke: #ddd;
-        }
-
+        /* Axis color classes for specific axes (kept for backwards compatibility) */
         .axis.axis-blue text {
             fill: #0077be;
         }
@@ -101,20 +87,18 @@
             opacity: 0.5;
         }
 
-        .axis-label {
-            font-size: 11px;
-            font-weight: bold;
-            text-anchor: middle;
+        .axis.axis-green text {
+            fill: #06a77d;
         }
 
-        .legend text {
-            font-size: 10px;
-            fill: #555;
-            alignment-baseline: middle;
+        .axis.axis-green path,
+        .axis.axis-green line {
+            stroke: #06a77d;
+            opacity: 0.5;
         }
 
+        /* Grid rendering */
         .grid line {
-            stroke: #f5f5f5;
             shape-rendering: crispEdges;
         }
     </style>
@@ -132,13 +116,50 @@
         // ============================================================================
         // VEGA LITE-STYLE DECLARATIVE CONFIGURATION
         // ============================================================================
+        // NOTE: This is a hybrid approach using Vega Lite-inspired declarative JSON
+        // configuration with custom D3 rendering. The structure uses standard Vega Lite
+        // types where possible (e.g., "line", "point") rather than custom types.
+        //
+        // Data Structure for Multiple Values at Same Timepoint:
+        // Instead of nested structures like { time: t, systolic: {...}, diastolic: {...} },
+        // we use separate series arrays with the same timepoints:
+        //   - systolic: [{ time: t1, value: 120 }, { time: t2, value: 125 }, ...]
+        //   - diastolic: [{ time: t1, value: 80 }, { time: t2, value: 85 }, ...]
+        // This aligns better with standard visualization patterns and prepares for
+        // openEHR OBSERVATION instances that can have multiple values at the same timepoint.
         const spec = {
             "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
             "description": "Health metrics visualization with responsive design and Voronoi interactions",
             "config": {
                 "margin": { "top": 20, "right": 40, "bottom": 70, "left": 40 },
                 "trackGaps": 20,
-                "axisGap": 10
+                "axisGap": 10,
+                "style": {
+                    "axis": {
+                        "labelFontSize": 11,
+                        "labelFontWeight": "bold",
+                        "tickFontSize": 10,
+                        "tickColor": "#666",
+                        "domainColor": "#ddd",
+                        "gridColor": "#f5f5f5"
+                    },
+                    "legend": {
+                        "fontSize": 10,
+                        "textColor": "#555"
+                    },
+                    "crosshair": {
+                        "stroke": "#999",
+                        "strokeWidth": 1,
+                        "strokeDasharray": "4,2"
+                    },
+                    "tooltip": {
+                        "fontSize": 11,
+                        "padding": 8,
+                        "background": "rgba(0, 0, 0, 0.9)",
+                        "textColor": "white",
+                        "borderRadius": 4
+                    }
+                }
             },
             "data": {
                 "generator": "time-series",
@@ -147,21 +168,14 @@
             },
             "tracks": [
                 {
-                    "weight": 1,
-                    "title": "Temperature & SpO2",
+                    "weight": 0.7,
+                    "title": "Temperature",
                     "axes": [
                         {
                             "position": "left",
-                            "domain": [35, 42],
+                            "domain": null,
                             "label": "Temp °C",
                             "color": "#e63946",
-                            "ticks": 5
-                        },
-                        {
-                            "position": "right",
-                            "domain": [80, 100],
-                            "label": "SpO2 %",
-                            "color": "#0077be",
                             "ticks": 5
                         }
                     ],
@@ -177,6 +191,43 @@
                             "pointStyle": {
                                 "fill": "white",
                                 "stroke": "#e63946",
+                                "strokeWidth": 2,
+                                "radius": 3
+                            }
+                        }
+                    ]
+                },
+                {
+                    "weight": 1,
+                    "title": "Oxygenation & Respiration",
+                    "axes": [
+                        {
+                            "position": "left",
+                            "domain": [10, 30],
+                            "label": "Resp /min",
+                            "color": "#06a77d",
+                            "ticks": 5
+                        },
+                        {
+                            "position": "right",
+                            "domain": [80, 100],
+                            "label": "SpO2 %",
+                            "color": "#0077be",
+                            "ticks": 5
+                        }
+                    ],
+                    "series": [
+                        {
+                            "type": "line",
+                            "data": "respiration",
+                            "axis": "left",
+                            "color": "#06a77d",
+                            "strokeWidth": 2,
+                            "curve": "monotoneX",
+                            "showPoints": true,
+                            "pointStyle": {
+                                "fill": "white",
+                                "stroke": "#06a77d",
                                 "strokeWidth": 2,
                                 "radius": 3
                             }
@@ -207,17 +258,41 @@
                         "items": [
                             {"symbol": "v", "color": "#457b9d", "label": "Systolic"},
                             {"symbol": "v-inv", "color": "#1d3557", "label": "Diastolic"},
-                            {"symbol": "circle", "color": "#e63946", "label": "Pulse"}
+                            {"symbol": "circle", "color": "#e63946", "label": "Pulse (BP)"},
+                            {"symbol": "circle-filled", "color": "#e63946", "label": "Pulse (Oximeter)"}
                         ]
                     },
                     "series": [
                         {
-                            "type": "blood-pressure",
-                            "data": "bp",
+                            "type": "point",
+                            "data": "systolic",
                             "axis": "left",
-                            "systolicColor": "#457b9d",
-                            "diastolicColor": "#1d3557",
-                            "pulseColor": "#e63946"
+                            "color": "#457b9d",
+                            "symbol": "v",
+                            "connectTo": "diastolic"
+                        },
+                        {
+                            "type": "point",
+                            "data": "diastolic",
+                            "axis": "left",
+                            "color": "#1d3557",
+                            "symbol": "v-inv"
+                        },
+                        {
+                            "type": "point",
+                            "data": "pulseBP",
+                            "axis": "left",
+                            "color": "#e63946",
+                            "symbol": "circle",
+                            "hollow": true
+                        },
+                        {
+                            "type": "point",
+                            "data": "pulseOx",
+                            "axis": "left",
+                            "color": "#e63946",
+                            "symbol": "circle",
+                            "hollow": false
                         }
                     ]
                 },
@@ -259,41 +334,96 @@
             const times = d3.range(hours).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
             const fewerTimes = d3.range(0, hours, 4).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
 
+            // Temperature with reduced variation - more realistic
             const tempData = times.map(t => ({
-                time: t, value: 36.5 + Math.sin(t.getTime() / 10000000) + Math.random() * 0.5, 
-                unit: '°C', type: 'Temp'
+                time: t, 
+                value: 36.8 + Math.sin(t.getTime() / 20000000) * 0.3 + (Math.random() * 0.2 - 0.1), 
+                unit: '°C', 
+                type: 'Temp'
             }));
 
-            const spo2Data = times.map(t => {
-                let val = 94 + Math.random() * 5; 
-                if (Math.random() < 0.1) val -= Math.random() * 10; 
-                val = Math.max(80, Math.min(100, val));
-                return { time: t, value: val, unit: '%', type: 'SpO2' };
+            // Pulse oximeter measurements - dense when monitoring, with gaps during meals/breaks
+            // Generate monitoring periods with 5-minute intervals, interspersed with gaps
+            const oximeterMeasurements = { spo2: [], respiration: [], pulse: [] };
+            let currentTime = 0;
+            
+            while (currentTime < hours) {
+                // Monitoring period: 1-3 hours of continuous monitoring
+                const monitoringDuration = 60 + Math.floor(Math.random() * 120);
+                const monitoringEnd = Math.min(currentTime + monitoringDuration, hours);
+                
+                // Initialize baseline values for this monitoring period
+                const baseSpo2 = 95 + Math.random() * 3;
+                const baseResp = 14 + Math.floor(Math.random() * 4);
+                const basePulse = 68 + Math.floor(Math.random() * 8);
+                
+                // Add measurements every 5 minutes during monitoring with small variations
+                for (let i = currentTime; i < monitoringEnd; i += 5/60) {
+                    if (i < hours) {
+                        const t = new Date(now.getTime() - (hours - i) * 3600 * 1000);
+                        
+                        // Small random walk within the period
+                        let spo2Val = baseSpo2 + (Math.random() - 0.5) * 2;
+                        spo2Val = Math.max(90, Math.min(100, spo2Val));
+                        oximeterMeasurements.spo2.push({ time: t, value: spo2Val, unit: '%', type: 'SpO2' });
+                        
+                        let respVal = baseResp + Math.floor((Math.random() - 0.5) * 4);
+                        respVal = Math.max(10, Math.min(30, respVal));
+                        oximeterMeasurements.respiration.push({ time: t, value: respVal, unit: '/min', type: 'Respiration' });
+                        
+                        let pulseVal = basePulse + Math.floor((Math.random() - 0.5) * 6);
+                        pulseVal = Math.max(60, Math.min(90, pulseVal));
+                        oximeterMeasurements.pulse.push({ time: t, value: pulseVal, unit: '/min', type: 'Pulse (Oximeter)' });
+                    }
+                }
+                
+                currentTime = monitoringEnd;
+                
+                // Gap period: 1-2 hours (meals, breaks, etc.)
+                if (currentTime < hours) {
+                    const gapDuration = 60 + Math.floor(Math.random() * 60);
+                    currentTime += gapDuration;
+                }
+            }
+            
+            const spo2Data = oximeterMeasurements.spo2;
+            const respirationData = oximeterMeasurements.respiration;
+            const pulseOxData = oximeterMeasurements.pulse;
+
+            // Blood pressure measurements - separate timing, includes pulse from BP machine
+            const bpTimepoints = fewerTimes.filter(() => Math.random() <= 0.6);
+            
+            const systolicData = bpTimepoints.map((t) => {
+                const sys = Math.round(120 + Math.random() * 20 - 10);
+                return { time: t, value: sys, unit: 'mm[Hg]', type: 'Systolic' };
             });
 
-            const bpData = fewerTimes.map((t) => {
-                if (Math.random() > 0.4) return null;
-                const sys = Math.round(120 + Math.random() * 20 - 10);
+            const diastolicData = bpTimepoints.map((t) => {
                 const dia = Math.round(80 + Math.random() * 10 - 5);
-                return {
-                    time: t,
-                    systolic: { value: sys, unit: 'mm[Hg]', type: 'Systolic' },
-                    diastolic: { value: dia, unit: 'mm[Hg]', type: 'Diastolic' },
-                };
-            }).filter(d => d);
+                return { time: t, value: dia, unit: 'mm[Hg]', type: 'Diastolic' };
+            });
 
-            const pulseData = times.map((t) => {
-                if (Math.random() > 0.2) return null;
-                const pulseVal = Math.round(70 + Math.random() * 15);
-                return { time: t, value: pulseVal, unit: '/min', type: 'Pulse' };
-            }).filter(d => d);
+            const pulseBPData = bpTimepoints.map((t) => {
+                const pulseVal = Math.round(70 + Math.random() * 10);
+                return { time: t, value: pulseVal, unit: '/min', type: 'Pulse (BP)' };
+            });
 
             const wellbeingData = times.map(t => {
                 if (Math.random() > 0.4) return null;
                 return { time: t, value: Math.floor(Math.random() * 5) + 1, unit: 'score', type: 'Wellbeing' };
             }).filter(d => d);
 
-            return { temp: tempData, spo2: spo2Data, bp: bpData, pulse: pulseData, wellbeing: wellbeingData, times };
+            return { 
+                temp: tempData, 
+                spo2: spo2Data, 
+                respiration: respirationData,
+                systolic: systolicData, 
+                diastolic: diastolicData, 
+                pulseBP: pulseBPData,
+                pulseOx: pulseOxData,
+                wellbeing: wellbeingData, 
+                times 
+            };
         }
 
         // ============================================================================
@@ -345,6 +475,46 @@
             gradient.append("stop").attr("offset", "30%").attr("style", "stop-color:#eef;stop-opacity:1");
             gradient.append("stop").attr("offset", "100%").attr("style", "stop-color:#eef;stop-opacity:1");
 
+            // Define SVG markers for custom symbols (using standard SVG patterns)
+            // V-shape marker (triangle pointing up) for systolic
+            const markerVUp = defs.append("marker")
+                .attr("id", "marker-v-up")
+                .attr("markerWidth", 12)
+                .attr("markerHeight", 12)
+                .attr("refX", 6)
+                .attr("refY", 6)
+                .attr("orient", "auto");
+            markerVUp.append("path")
+                .attr("d", "M 0,12 L 6,0 L 12,12 Z")
+                .attr("fill", "none")
+                .attr("stroke-width", 2);
+            
+            // Inverted V-shape marker (triangle pointing down) for diastolic
+            const markerVDown = defs.append("marker")
+                .attr("id", "marker-v-down")
+                .attr("markerWidth", 12)
+                .attr("markerHeight", 12)
+                .attr("refX", 6)
+                .attr("refY", 6)
+                .attr("orient", "auto");
+            markerVDown.append("path")
+                .attr("d", "M 0,0 L 6,12 L 12,0 Z")
+                .attr("fill", "none")
+                .attr("stroke-width", 2);
+            
+            // Pattern for hollow circles
+            const patternHollow = defs.append("pattern")
+                .attr("id", "pattern-hollow-circle")
+                .attr("width", 8)
+                .attr("height", 8)
+                .attr("patternUnits", "userSpaceOnUse");
+            patternHollow.append("circle")
+                .attr("cx", 4)
+                .attr("cy", 4)
+                .attr("r", 3)
+                .attr("fill", "white")
+                .attr("stroke-width", 2);
+
             let currentY = 0;
             let voronoiPoints = [];
             const pushVoronoi = (time, value, yOffset, yScale, data, label) => {
@@ -359,25 +529,63 @@
                 // Create scales for this track
                 const scales = {};
                 trackSpec.axes.forEach(axis => {
+                    let domain = axis.domain;
+                    
+                    // Auto-calculate domain if null (Vega Lite style)
+                    if (domain === null) {
+                        // Find all series using this axis and calculate min/max
+                        const seriesForAxis = trackSpec.series.filter(s => s.axis === axis.position);
+                        const allValues = [];
+                        
+                        seriesForAxis.forEach(series => {
+                            const seriesData = data[series.data];
+                            if (seriesData) {
+                                seriesData.forEach(d => {
+                                    if (d && d.value !== undefined && d.value !== null) {
+                                        allValues.push(d.value);
+                                    }
+                                });
+                            }
+                        });
+                        
+                        if (allValues.length > 0) {
+                            const min = d3.min(allValues);
+                            const max = d3.max(allValues);
+                            const padding = (max - min) * 0.1; // 10% padding
+                            domain = [min - padding, max + padding];
+                        } else {
+                            domain = [0, 1]; // Fallback
+                        }
+                    }
+                    
                     scales[axis.position] = d3.scaleLinear()
-                        .domain(axis.domain)
+                        .domain(domain)
                         .range([height, 0]);
                 });
 
                 // Grid (use first axis)
                 const firstAxis = trackSpec.axes[0];
                 const gridScale = scales[firstAxis.position];
-                g.append("g").attr("class", "grid")
+                const gridGroup = g.append("g").attr("class", "grid")
                     .call(d3.axisLeft(gridScale)
                         .tickValues(firstAxis.gridLines || null)
                         .ticks(firstAxis.ticks || 5)
                         .tickSize(-contentWidth)
                         .tickFormat(""));
+                
+                // Apply grid color from config
+                if (spec.config.style?.axis?.gridColor) {
+                    gridGroup.selectAll("line").attr("stroke", spec.config.style.axis.gridColor);
+                }
 
                 // Render axes
                 trackSpec.axes.forEach(axis => {
                     const yScale = scales[axis.position];
-                    const axisClass = `axis ${axis.color ? `axis-${axis.color === '#0077be' ? 'blue' : 'red'}` : ''}`;
+                    let colorClass = '';
+                    if (axis.color === '#0077be') colorClass = 'blue';
+                    else if (axis.color === '#e63946') colorClass = 'red';
+                    else if (axis.color === '#06a77d') colorClass = 'green';
+                    const axisClass = `axis ${colorClass ? `axis-${colorClass}` : ''}`;
                     
                     if (axis.position === 'left') {
                         const axL = g.append("g").attr("class", axisClass)
@@ -385,24 +593,50 @@
                                 .tickValues(axis.ticks && Array.isArray(axis.ticks) ? axis.ticks : null)
                                 .ticks(axis.ticks && typeof axis.ticks === 'number' ? axis.ticks : 5)
                                 .tickSize(axis.gridLines ? 0 : undefined));
+                        
+                        // Apply axis styles from config if no color specified
+                        if (!colorClass && spec.config.style?.axis) {
+                            axL.selectAll("text").attr("font-size", spec.config.style.axis.tickFontSize);
+                            if (!axis.color) {
+                                axL.selectAll("text").attr("fill", spec.config.style.axis.tickColor);
+                                axL.selectAll("path, line").attr("stroke", spec.config.style.axis.domainColor);
+                            }
+                        }
+                        
                         if (axis.label) {
                             axL.append("text").attr("class", "axis-label")
                                 .attr("transform", "rotate(-90)")
                                 .attr("y", -30)
                                 .attr("x", -height / 2)
                                 .attr("fill", axis.color || "#555")
+                                .attr("font-size", spec.config.style?.axis?.labelFontSize || 11)
+                                .attr("font-weight", spec.config.style?.axis?.labelFontWeight || "bold")
+                                .attr("text-anchor", "middle")
                                 .text(axis.label);
                         }
                     } else if (axis.position === 'right') {
                         const axR = g.append("g").attr("class", axisClass)
                             .attr("transform", `translate(${contentWidth}, 0)`)
                             .call(d3.axisRight(yScale).ticks(axis.ticks || 5));
+                        
+                        // Apply axis styles from config if no color specified
+                        if (!colorClass && spec.config.style?.axis) {
+                            axR.selectAll("text").attr("font-size", spec.config.style.axis.tickFontSize);
+                            if (!axis.color) {
+                                axR.selectAll("text").attr("fill", spec.config.style.axis.tickColor);
+                                axR.selectAll("path, line").attr("stroke", spec.config.style.axis.domainColor);
+                            }
+                        }
+                        
                         if (axis.label) {
                             axR.append("text").attr("class", "axis-label")
                                 .attr("transform", "rotate(90)")
                                 .attr("y", -30)
                                 .attr("x", height / 2)
                                 .attr("fill", axis.color || "#555")
+                                .attr("font-size", spec.config.style?.axis?.labelFontSize || 11)
+                                .attr("font-weight", spec.config.style?.axis?.labelFontWeight || "bold")
+                                .attr("text-anchor", "middle")
                                 .text(axis.label);
                         }
                     }
@@ -437,8 +671,26 @@
                                 .attr("fill", "white")
                                 .attr("stroke", item.color)
                                 .attr("stroke-width", 2);
+                        } else if (item.symbol === "circle-filled") {
+                            leg.append("path").attr("d", d3.symbol().type(d3.symbolCircle).size(25))
+                                .attr("transform", `translate(${offsetX + 5},5)`)
+                                .attr("fill", item.color)
+                                .attr("stroke", item.color)
+                                .attr("stroke-width", 2);
                         }
-                        leg.append("text").attr("x", offsetX + 15).attr("y", 5).text(item.label);
+                        const legendText = leg.append("text")
+                            .attr("x", offsetX + 15)
+                            .attr("y", 5)
+                            .text(item.label);
+                        
+                        // Apply legend text styles from config
+                        if (spec.config.style?.legend) {
+                            legendText
+                                .attr("font-size", spec.config.style.legend.fontSize)
+                                .attr("fill", spec.config.style.legend.textColor)
+                                .attr("alignment-baseline", "middle");
+                        }
+                        
                         offsetX += item.label.length * 6 + 55;
                     });
                 }
@@ -446,6 +698,10 @@
                 // Render series
                 trackSpec.series.forEach(series => {
                     const yScale = scales[series.axis];
+                    
+                    // Constants for V-shape markers
+                    const V_MARKER_WIDTH = 8;
+                    const V_MARKER_HEIGHT = 6;
                     
                     if (series.type === 'line') {
                         const lineData = data[series.data];
@@ -476,53 +732,67 @@
                         }
                         
                         lineData.forEach(d => pushVoronoi(d.time, d.value, currentY, yScale, d, d.type));
-                    } else if (series.type === 'blood-pressure') {
-                        const bpData = data[series.data];
-                        const pulseData = data.pulse;
-                        const items = g.selectAll(".bp-group")
-                            .data(bpData)
-                            .enter()
-                            .append("g")
-                            .attr("transform", d => `translate(${x(d.time)},0)`);
-
-                        const vWidth = 8;
-                        const vHeight = 6;
-                        const vPath = `M ${-vWidth},${-vHeight} L 0,0 L ${vWidth},${-vHeight}`;
-                        const vInvPath = `M ${-vWidth},${vHeight} L 0,0 L ${vWidth},${vHeight}`;
-
-                        items.append("path")
-                            .attr("d", vPath)
-                            .attr("transform", d => `translate(0,${yScale(d.systolic.value)})`)
-                            .attr("fill", "none")
-                            .attr("stroke", series.systolicColor)
-                            .attr("stroke-width", 2);
-
-                        items.append("path")
-                            .attr("d", vInvPath)
-                            .attr("transform", d => `translate(0,${yScale(d.diastolic.value)})`)
-                            .attr("fill", "none")
-                            .attr("stroke", series.diastolicColor)
-                            .attr("stroke-width", 2);
+                    } else if (series.type === 'point') {
+                        const pointData = data[series.data];
                         
-                        g.selectAll(".pulse-point")
-                            .data(pulseData)
-                            .enter()
-                            .append("path")
-                            .attr("class", "pulse-point")
-                            .attr("d", d3.symbol().type(d3.symbolCircle).size(30))
-                            .attr("transform", d => `translate(${x(d.time)},${yScale(d.value)})`)
-                            .attr("fill", "white")
-                            .attr("stroke", series.pulseColor)
-                            .attr("stroke-width", 2);
+                        if (series.symbol === 'v') {
+                            const vPath = `M ${-V_MARKER_WIDTH},${-V_MARKER_HEIGHT} L 0,0 L ${V_MARKER_WIDTH},${-V_MARKER_HEIGHT}`;
+                            
+                            g.selectAll(`.point-${series.data}`)
+                                .data(pointData)
+                                .enter()
+                                .append("path")
+                                .attr("d", vPath)
+                                .attr("transform", d => `translate(${x(d.time)},${yScale(d.value)})`)
+                                .attr("fill", "none")
+                                .attr("stroke", series.color)
+                                .attr("stroke-width", 2);
+                            
+                            // Draw connecting lines if connectTo is specified
+                            if (series.connectTo) {
+                                const connectData = data[series.connectTo];
+                                // Build a map for O(1) lookups by timestamp
+                                const connectMap = new Map(connectData.map(d => [d.time.getTime(), d]));
+                                
+                                pointData.forEach(sysPoint => {
+                                    const diaPoint = connectMap.get(sysPoint.time.getTime());
+                                    if (diaPoint) {
+                                        g.append("line")
+                                            .attr("x1", x(sysPoint.time))
+                                            .attr("y1", yScale(sysPoint.value))
+                                            .attr("x2", x(diaPoint.time))
+                                            .attr("y2", yScale(diaPoint.value))
+                                            .attr("stroke", "#999")
+                                            .attr("stroke-width", 1)
+                                            .attr("stroke-dasharray", "3,3");
+                                    }
+                                });
+                            }
+                        } else if (series.symbol === 'v-inv') {
+                            const vInvPath = `M ${-V_MARKER_WIDTH},${V_MARKER_HEIGHT} L 0,0 L ${V_MARKER_WIDTH},${V_MARKER_HEIGHT}`;
+                            
+                            g.selectAll(`.point-${series.data}`)
+                                .data(pointData)
+                                .enter()
+                                .append("path")
+                                .attr("d", vInvPath)
+                                .attr("transform", d => `translate(${x(d.time)},${yScale(d.value)})`)
+                                .attr("fill", "none")
+                                .attr("stroke", series.color)
+                                .attr("stroke-width", 2);
+                        } else if (series.symbol === 'circle') {
+                            g.selectAll(`.point-${series.data}`)
+                                .data(pointData)
+                                .enter()
+                                .append("path")
+                                .attr("d", d3.symbol().type(d3.symbolCircle).size(30))
+                                .attr("transform", d => `translate(${x(d.time)},${yScale(d.value)})`)
+                                .attr("fill", series.hollow ? "white" : series.color)
+                                .attr("stroke", series.color)
+                                .attr("stroke-width", 2);
+                        }
                         
-                        bpData.forEach(d => {
-                            pushVoronoi(d.time, d.systolic.value, currentY, yScale, d.systolic, "Systolic");
-                            pushVoronoi(d.time, d.diastolic.value, currentY, yScale, d.diastolic, "Diastolic");
-                        });
-
-                        pulseData.forEach(d => {
-                            pushVoronoi(d.time, d.value, currentY, yScale, d, "Pulse");
-                        });
+                        pointData.forEach(d => pushVoronoi(d.time, d.value, currentY, yScale, d, d.type));
                     } else if (series.type === 'categorical') {
                         const catData = data[series.data];
                         const color = d3.scaleOrdinal()
@@ -602,10 +872,29 @@
                 .attr("class", "crosshair")
                 .attr("y1", 0)
                 .attr("y2", axisY);
+            
+            // Apply crosshair styles from config
+            if (spec.config.style?.crosshair) {
+                crosshair
+                    .attr("stroke", spec.config.style.crosshair.stroke)
+                    .attr("stroke-width", spec.config.style.crosshair.strokeWidth)
+                    .attr("stroke-dasharray", spec.config.style.crosshair.strokeDasharray);
+            }
 
             // --- Voronoi Interaction (from mockup) ---
             const delaunay = d3.Delaunay.from(voronoiPoints, d => d.x, d => d.y);
             const tooltip = d3.select("#tooltip");
+            
+            // Apply tooltip styles from config
+            if (spec.config.style?.tooltip) {
+                tooltip
+                    .style("padding", spec.config.style.tooltip.padding + "px")
+                    .style("font-size", spec.config.style.tooltip.fontSize + "px")
+                    .style("background", spec.config.style.tooltip.background)
+                    .style("color", spec.config.style.tooltip.textColor)
+                    .style("border-radius", spec.config.style.tooltip.borderRadius + "px");
+            }
+            
             const highlighter = svg.append("circle").attr("r", 8).attr("fill", "none").attr("stroke", "#333").attr("stroke-width", 2).attr("stroke-opacity", 0.5).style("opacity", 0).style("pointer-events", "none");
 
             svg.append("rect")
