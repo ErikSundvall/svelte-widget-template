@@ -353,12 +353,12 @@
             });
 
             const respirationData = oximeterTimepoints.map(t => {
-                const respVal = Math.round(16 + Math.random() * 6 - 3);
+                const respVal = Math.round(13 + Math.random() * 6);
                 return { time: t, value: respVal, unit: '/min', type: 'Respiration' };
             });
 
             const pulseOxData = oximeterTimepoints.map(t => {
-                const pulseVal = Math.round(72 + Math.random() * 12 - 6);
+                const pulseVal = Math.round(66 + Math.random() * 12);
                 return { time: t, value: pulseVal, unit: '/min', type: 'Pulse (Oximeter)' };
             });
 
@@ -376,7 +376,7 @@
             });
 
             const pulseBPData = bpTimepoints.map((t) => {
-                const pulseVal = Math.round(75 + Math.random() * 10 - 5);
+                const pulseVal = Math.round(70 + Math.random() * 10);
                 return { time: t, value: pulseVal, unit: '/min', type: 'Pulse (BP)' };
             });
 
