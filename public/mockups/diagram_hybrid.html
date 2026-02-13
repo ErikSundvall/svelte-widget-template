@@ -331,8 +331,8 @@
         function generateData(config) {
             const now = new Date();
             const hours = config.data.hours || 60;
-            const times = d3.range(hours).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
-            const fewerTimes = d3.range(0, hours, 4).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
+            const times = d3.range(hours + 1).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
+            const fewerTimes = d3.range(0, hours + 1, 4).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
 
             // Temperature with reduced variation - more realistic
             const tempData = times.map(t => ({
@@ -349,8 +349,10 @@
             
             while (currentTime < hours) {
                 // Monitoring period: 1-3 hours of continuous monitoring
-                const monitoringDuration = 60 + Math.floor(Math.random() * 120);
+                const monitoringDuration = (60 + Math.floor(Math.random() * 120)) / 60;
                 const monitoringEnd = Math.min(currentTime + monitoringDuration, hours);
+
+                console.log(`Monitoring from ${currentTime.toFixed(2)} to ${monitoringEnd.toFixed(2)}`);
                 
                 // Initialize baseline values for this monitoring period
                 const baseSpo2 = 95 + Math.random() * 3;
@@ -381,7 +383,16 @@
                 
                 // Gap period: 1-2 hours (meals, breaks, etc.)
                 if (currentTime < hours) {
-                    const gapDuration = 60 + Math.floor(Math.random() * 60);
+                    const gapDuration = (60 + Math.floor(Math.random() * 60)) / 60;
+                    console.log(`Gap starting at ${currentTime.toFixed(2)} for ${gapDuration.toFixed(2)} hours`);
+
+                    // Insert null values to break the lines in the visualization
+                    const t = new Date(now.getTime() - (hours - currentTime) * 3600 * 1000);
+                    oximeterMeasurements.spo2.push({ time: t, value: null, unit: '%', type: 'SpO2' });
+                    oximeterMeasurements.respiration.push({ time: t, value: null, unit: '/min', type: 'Respiration' });
+                    // Pulse is points, but we push null anyway for consistency or if it becomes a line
+                    oximeterMeasurements.pulse.push({ time: t, value: null, unit: '/min', type: 'Pulse (Oximeter)' });
+
                     currentTime += gapDuration;
                 }
             }
@@ -706,6 +717,7 @@
                     if (series.type === 'line') {
                         const lineData = data[series.data];
                         const line = d3.line()
+                            .defined(d => d.value !== null)
                             .x(d => x(d.time))
                             .y(d => yScale(d.value))
                             .curve(series.curve === 'monotoneX' ? d3.curveMonotoneX : d3.curveLinear);
@@ -720,7 +732,7 @@
                         
                         if (series.showPoints) {
                             g.selectAll(`.dot-${series.data}`)
-                                .data(lineData)
+                                .data(lineData.filter(d => d.value !== null))
                                 .enter()
                                 .append("circle")
                                 .attr("cx", d => x(d.time))
@@ -731,9 +743,9 @@
                                 .attr("stroke-width", series.pointStyle?.strokeWidth || 2);
                         }
                         
-                        lineData.forEach(d => pushVoronoi(d.time, d.value, currentY, yScale, d, d.type));
+                        lineData.filter(d => d.value !== null).forEach(d => pushVoronoi(d.time, d.value, currentY, yScale, d, d.type));
                     } else if (series.type === 'point') {
-                        const pointData = data[series.data];
+                        const pointData = data[series.data].filter(d => d.value !== null);
                         
                         if (series.symbol === 'v') {
                             const vPath = `M ${-V_MARKER_WIDTH},${-V_MARKER_HEIGHT} L 0,0 L ${V_MARKER_WIDTH},${-V_MARKER_HEIGHT}`;
