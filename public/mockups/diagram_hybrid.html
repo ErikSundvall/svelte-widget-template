@@ -7,6 +7,7 @@
     <title>Hybrid Vega Lite Config + D3 Rendering Diagram</title>
     <script src="../js/lib/d3.v7.min.js"></script>
     <style>
+        /* Layout and container styles */
         html,
         body {
             width: 100%;
@@ -47,14 +48,10 @@
             width: 100%;
         }
 
+        /* Tooltip styles - position and layout only, colors from config */
         .tooltip {
             position: absolute;
             text-align: left;
-            padding: 8px;
-            font-size: 11px;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            border-radius: 4px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
@@ -63,24 +60,13 @@
             line-height: 1.4;
         }
 
+        /* Crosshair - opacity and pointer events only, stroke from config */
         .crosshair {
-            stroke: #999;
-            stroke-width: 1;
-            stroke-dasharray: 4, 2;
             pointer-events: none;
             opacity: 0;
         }
 
-        .axis text {
-            font-size: 10px;
-            fill: #666;
-        }
-
-        .axis path,
-        .axis line {
-            stroke: #ddd;
-        }
-
+        /* Axis color classes for specific axes (kept for backwards compatibility) */
         .axis.axis-blue text {
             fill: #0077be;
         }
@@ -111,20 +97,8 @@
             opacity: 0.5;
         }
 
-        .axis-label {
-            font-size: 11px;
-            font-weight: bold;
-            text-anchor: middle;
-        }
-
-        .legend text {
-            font-size: 10px;
-            fill: #555;
-            alignment-baseline: middle;
-        }
-
+        /* Grid rendering */
         .grid line {
-            stroke: #f5f5f5;
             shape-rendering: crispEdges;
         }
     </style>
@@ -159,7 +133,33 @@
             "config": {
                 "margin": { "top": 20, "right": 40, "bottom": 70, "left": 40 },
                 "trackGaps": 20,
-                "axisGap": 10
+                "axisGap": 10,
+                "style": {
+                    "axis": {
+                        "labelFontSize": 11,
+                        "labelFontWeight": "bold",
+                        "tickFontSize": 10,
+                        "tickColor": "#666",
+                        "domainColor": "#ddd",
+                        "gridColor": "#f5f5f5"
+                    },
+                    "legend": {
+                        "fontSize": 10,
+                        "textColor": "#555"
+                    },
+                    "crosshair": {
+                        "stroke": "#999",
+                        "strokeWidth": 1,
+                        "strokeDasharray": "4,2"
+                    },
+                    "tooltip": {
+                        "fontSize": 11,
+                        "padding": 8,
+                        "background": "rgba(0, 0, 0, 0.9)",
+                        "textColor": "white",
+                        "borderRadius": 4
+                    }
+                }
             },
             "data": {
                 "generator": "time-series",
@@ -173,7 +173,7 @@
                     "axes": [
                         {
                             "position": "left",
-                            "domain": [35, 42],
+                            "domain": null,
                             "label": "Temp °C",
                             "color": "#e63946",
                             "ticks": 5
@@ -342,8 +342,31 @@
                 type: 'Temp'
             }));
 
-            // Pulse oximeter measurements - done at same time
-            const oximeterTimepoints = times.filter(() => Math.random() <= 0.2);
+            // Pulse oximeter measurements - dense when monitoring, with gaps during meals/breaks
+            // Generate monitoring periods with 5-minute intervals, interspersed with gaps
+            const oximeterTimepoints = [];
+            let currentTime = 0;
+            
+            while (currentTime < hours) {
+                // Monitoring period: 30-120 minutes of continuous monitoring
+                const monitoringDuration = 30 + Math.floor(Math.random() * 90);
+                const monitoringEnd = Math.min(currentTime + monitoringDuration, hours);
+                
+                // Add measurements every 5 minutes during monitoring
+                for (let i = currentTime; i < monitoringEnd; i += 5/60) {
+                    if (i < hours) {
+                        oximeterTimepoints.push(new Date(now.getTime() - (hours - i) * 3600 * 1000));
+                    }
+                }
+                
+                currentTime = monitoringEnd;
+                
+                // Gap period: 30-120 minutes (meals, breaks, etc.)
+                if (currentTime < hours) {
+                    const gapDuration = 30 + Math.floor(Math.random() * 90);
+                    currentTime += gapDuration;
+                }
+            }
             
             const spo2Data = oximeterTimepoints.map(t => {
                 let val = 96 + Math.random() * 3; 
@@ -461,20 +484,54 @@
                 // Create scales for this track
                 const scales = {};
                 trackSpec.axes.forEach(axis => {
+                    let domain = axis.domain;
+                    
+                    // Auto-calculate domain if null (Vega Lite style)
+                    if (domain === null) {
+                        // Find all series using this axis and calculate min/max
+                        const seriesForAxis = trackSpec.series.filter(s => s.axis === axis.position);
+                        const allValues = [];
+                        
+                        seriesForAxis.forEach(series => {
+                            const seriesData = data[series.data];
+                            if (seriesData) {
+                                seriesData.forEach(d => {
+                                    if (d && d.value !== undefined && d.value !== null) {
+                                        allValues.push(d.value);
+                                    }
+                                });
+                            }
+                        });
+                        
+                        if (allValues.length > 0) {
+                            const min = d3.min(allValues);
+                            const max = d3.max(allValues);
+                            const padding = (max - min) * 0.1; // 10% padding
+                            domain = [min - padding, max + padding];
+                        } else {
+                            domain = [0, 1]; // Fallback
+                        }
+                    }
+                    
                     scales[axis.position] = d3.scaleLinear()
-                        .domain(axis.domain)
+                        .domain(domain)
                         .range([height, 0]);
                 });
 
                 // Grid (use first axis)
                 const firstAxis = trackSpec.axes[0];
                 const gridScale = scales[firstAxis.position];
-                g.append("g").attr("class", "grid")
+                const gridGroup = g.append("g").attr("class", "grid")
                     .call(d3.axisLeft(gridScale)
                         .tickValues(firstAxis.gridLines || null)
                         .ticks(firstAxis.ticks || 5)
                         .tickSize(-contentWidth)
                         .tickFormat(""));
+                
+                // Apply grid color from config
+                if (spec.config.style?.axis?.gridColor) {
+                    gridGroup.selectAll("line").attr("stroke", spec.config.style.axis.gridColor);
+                }
 
                 // Render axes
                 trackSpec.axes.forEach(axis => {
@@ -491,24 +548,50 @@
                                 .tickValues(axis.ticks && Array.isArray(axis.ticks) ? axis.ticks : null)
                                 .ticks(axis.ticks && typeof axis.ticks === 'number' ? axis.ticks : 5)
                                 .tickSize(axis.gridLines ? 0 : undefined));
+                        
+                        // Apply axis styles from config if no color specified
+                        if (!colorClass && spec.config.style?.axis) {
+                            axL.selectAll("text").attr("font-size", spec.config.style.axis.tickFontSize);
+                            if (!axis.color) {
+                                axL.selectAll("text").attr("fill", spec.config.style.axis.tickColor);
+                                axL.selectAll("path, line").attr("stroke", spec.config.style.axis.domainColor);
+                            }
+                        }
+                        
                         if (axis.label) {
                             axL.append("text").attr("class", "axis-label")
                                 .attr("transform", "rotate(-90)")
                                 .attr("y", -30)
                                 .attr("x", -height / 2)
                                 .attr("fill", axis.color || "#555")
+                                .attr("font-size", spec.config.style?.axis?.labelFontSize || 11)
+                                .attr("font-weight", spec.config.style?.axis?.labelFontWeight || "bold")
+                                .attr("text-anchor", "middle")
                                 .text(axis.label);
                         }
                     } else if (axis.position === 'right') {
                         const axR = g.append("g").attr("class", axisClass)
                             .attr("transform", `translate(${contentWidth}, 0)`)
                             .call(d3.axisRight(yScale).ticks(axis.ticks || 5));
+                        
+                        // Apply axis styles from config if no color specified
+                        if (!colorClass && spec.config.style?.axis) {
+                            axR.selectAll("text").attr("font-size", spec.config.style.axis.tickFontSize);
+                            if (!axis.color) {
+                                axR.selectAll("text").attr("fill", spec.config.style.axis.tickColor);
+                                axR.selectAll("path, line").attr("stroke", spec.config.style.axis.domainColor);
+                            }
+                        }
+                        
                         if (axis.label) {
                             axR.append("text").attr("class", "axis-label")
                                 .attr("transform", "rotate(90)")
                                 .attr("y", -30)
                                 .attr("x", height / 2)
                                 .attr("fill", axis.color || "#555")
+                                .attr("font-size", spec.config.style?.axis?.labelFontSize || 11)
+                                .attr("font-weight", spec.config.style?.axis?.labelFontWeight || "bold")
+                                .attr("text-anchor", "middle")
                                 .text(axis.label);
                         }
                     }
@@ -550,7 +633,19 @@
                                 .attr("stroke", item.color)
                                 .attr("stroke-width", 2);
                         }
-                        leg.append("text").attr("x", offsetX + 15).attr("y", 5).text(item.label);
+                        const legendText = leg.append("text")
+                            .attr("x", offsetX + 15)
+                            .attr("y", 5)
+                            .text(item.label);
+                        
+                        // Apply legend text styles from config
+                        if (spec.config.style?.legend) {
+                            legendText
+                                .attr("font-size", spec.config.style.legend.fontSize)
+                                .attr("fill", spec.config.style.legend.textColor)
+                                .attr("alignment-baseline", "middle");
+                        }
+                        
                         offsetX += item.label.length * 6 + 55;
                     });
                 }
@@ -732,10 +827,29 @@
                 .attr("class", "crosshair")
                 .attr("y1", 0)
                 .attr("y2", axisY);
+            
+            // Apply crosshair styles from config
+            if (spec.config.style?.crosshair) {
+                crosshair
+                    .attr("stroke", spec.config.style.crosshair.stroke)
+                    .attr("stroke-width", spec.config.style.crosshair.strokeWidth)
+                    .attr("stroke-dasharray", spec.config.style.crosshair.strokeDasharray);
+            }
 
             // --- Voronoi Interaction (from mockup) ---
             const delaunay = d3.Delaunay.from(voronoiPoints, d => d.x, d => d.y);
             const tooltip = d3.select("#tooltip");
+            
+            // Apply tooltip styles from config
+            if (spec.config.style?.tooltip) {
+                tooltip
+                    .style("padding", spec.config.style.tooltip.padding + "px")
+                    .style("font-size", spec.config.style.tooltip.fontSize + "px")
+                    .style("background", spec.config.style.tooltip.background)
+                    .style("color", spec.config.style.tooltip.textColor)
+                    .style("border-radius", spec.config.style.tooltip.borderRadius + "px");
+            }
+            
             const highlighter = svg.append("circle").attr("r", 8).attr("fill", "none").attr("stroke", "#333").attr("stroke-width", 2).attr("stroke-opacity", 0.5).style("opacity", 0).style("pointer-events", "none");
 
             svg.append("rect")
