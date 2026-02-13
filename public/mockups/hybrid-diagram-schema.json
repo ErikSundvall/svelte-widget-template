@@ -1,0 +1,322 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Hybrid Diagram Specification Schema",
+  "description": "Schema for the hybrid Vega Lite-style + D3 rendering diagram. This is a custom format inspired by Vega Lite but with extensions for multi-track time-series visualizations.",
+  "type": "object",
+  "required": ["$schema", "config", "data", "tracks"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to Vega Lite schema (for compatibility, though this is a custom extension)",
+      "const": "https://vega.github.io/schema/vega-lite/v5.json"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the visualization"
+    },
+    "config": {
+      "type": "object",
+      "description": "Global configuration for the diagram",
+      "required": ["margin"],
+      "properties": {
+        "margin": {
+          "type": "object",
+          "properties": {
+            "top": {"type": "number", "minimum": 0},
+            "right": {"type": "number", "minimum": 0},
+            "bottom": {"type": "number", "minimum": 0},
+            "left": {"type": "number", "minimum": 0}
+          },
+          "required": ["top", "right", "bottom", "left"]
+        },
+        "trackGaps": {
+          "type": "number",
+          "description": "Vertical spacing between tracks in pixels",
+          "minimum": 0,
+          "default": 20
+        },
+        "axisGap": {
+          "type": "number",
+          "description": "Horizontal spacing for axes in pixels",
+          "minimum": 0,
+          "default": 10
+        },
+        "style": {
+          "type": "object",
+          "description": "Declarative styling configuration",
+          "properties": {
+            "axis": {
+              "type": "object",
+              "properties": {
+                "labelFontSize": {"type": "number", "minimum": 1},
+                "labelFontWeight": {"type": "string"},
+                "tickFontSize": {"type": "number", "minimum": 1},
+                "tickColor": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+                "domainColor": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+                "gridColor": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}
+              }
+            },
+            "legend": {
+              "type": "object",
+              "properties": {
+                "fontSize": {"type": "number", "minimum": 1},
+                "textColor": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}
+              }
+            },
+            "crosshair": {
+              "type": "object",
+              "properties": {
+                "stroke": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+                "strokeWidth": {"type": "number", "minimum": 0},
+                "strokeDasharray": {"type": "string"}
+              }
+            },
+            "tooltip": {
+              "type": "object",
+              "properties": {
+                "fontSize": {"type": "number", "minimum": 1},
+                "padding": {"type": "number", "minimum": 0},
+                "background": {"type": "string"},
+                "textColor": {"type": "string"},
+                "borderRadius": {"type": "number", "minimum": 0}
+              }
+            }
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "description": "Data generation configuration",
+      "properties": {
+        "generator": {
+          "type": "string",
+          "description": "Type of data generator",
+          "enum": ["time-series"]
+        },
+        "hours": {
+          "type": "number",
+          "description": "Number of hours of data to generate",
+          "minimum": 1
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Start time for data generation",
+          "enum": ["now"]
+        }
+      }
+    },
+    "tracks": {
+      "type": "array",
+      "description": "Array of track specifications for multi-track layout",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/track"
+      }
+    }
+  },
+  "definitions": {
+    "track": {
+      "type": "object",
+      "required": ["title", "axes", "series"],
+      "properties": {
+        "weight": {
+          "type": "number",
+          "description": "Proportional height weight for this track",
+          "minimum": 0,
+          "default": 1
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the track"
+        },
+        "axes": {
+          "type": "array",
+          "description": "Array of axis specifications",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/axis"
+          }
+        },
+        "legend": {
+          "$ref": "#/definitions/legend"
+        },
+        "series": {
+          "type": "array",
+          "description": "Array of series specifications",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/series"
+          }
+        }
+      }
+    },
+    "axis": {
+      "type": "object",
+      "required": ["position"],
+      "properties": {
+        "position": {
+          "type": "string",
+          "description": "Position of the axis",
+          "enum": ["left", "right"]
+        },
+        "domain": {
+          "description": "Domain range for the axis. Use null for auto-scaling from data.",
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {"type": "number"},
+              "minItems": 2,
+              "maxItems": 2
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "type": "string",
+          "description": "Label for the axis"
+        },
+        "color": {
+          "type": "string",
+          "description": "Color for axis text and lines",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "ticks": {
+          "description": "Number of ticks or array of specific tick values",
+          "oneOf": [
+            {"type": "number", "minimum": 1},
+            {
+              "type": "array",
+              "items": {"type": "number"}
+            }
+          ]
+        },
+        "gridLines": {
+          "type": "array",
+          "description": "Specific grid line positions",
+          "items": {"type": "number"}
+        }
+      }
+    },
+    "legend": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["symbol", "color", "label"],
+            "properties": {
+              "symbol": {
+                "type": "string",
+                "description": "Symbol type for legend item",
+                "enum": ["v", "v-inv", "circle", "circle-filled"]
+              },
+              "color": {
+                "type": "string",
+                "description": "Color for the symbol",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              },
+              "label": {
+                "type": "string",
+                "description": "Label text for legend item"
+              }
+            }
+          }
+        }
+      }
+    },
+    "series": {
+      "type": "object",
+      "required": ["type", "data", "axis"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Series type (standard Vega Lite types where applicable)",
+          "enum": ["line", "point", "categorical"]
+        },
+        "data": {
+          "type": "string",
+          "description": "Reference to data array"
+        },
+        "axis": {
+          "type": "string",
+          "description": "Which axis this series uses",
+          "enum": ["left", "right"]
+        },
+        "color": {
+          "type": "string",
+          "description": "Color for the series",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "description": "Stroke width for line series",
+          "minimum": 0
+        },
+        "strokeDasharray": {
+          "type": "string",
+          "description": "Dash array pattern for line series"
+        },
+        "curve": {
+          "type": "string",
+          "description": "Curve interpolation type (D3 curve types)",
+          "enum": ["monotoneX", "linear"]
+        },
+        "showPoints": {
+          "type": "boolean",
+          "description": "Whether to show points on line series"
+        },
+        "pointStyle": {
+          "type": "object",
+          "description": "Style for points on line series",
+          "properties": {
+            "fill": {"type": "string"},
+            "stroke": {"type": "string"},
+            "strokeWidth": {"type": "number", "minimum": 0},
+            "radius": {"type": "number", "minimum": 0}
+          }
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Symbol type for point series (custom extension)",
+          "enum": ["circle", "v", "v-inv"]
+        },
+        "hollow": {
+          "type": "boolean",
+          "description": "Whether point symbols are hollow (custom extension)"
+        },
+        "connectTo": {
+          "type": "string",
+          "description": "Data reference to connect points to (custom extension for BP visualization)"
+        },
+        "colorScale": {
+          "type": "object",
+          "description": "Color scale for categorical series",
+          "properties": {
+            "domain": {
+              "type": "array",
+              "items": {"type": "number"}
+            },
+            "range": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}
+            }
+          }
+        },
+        "barWidth": {
+          "type": "number",
+          "description": "Width of bars for categorical series",
+          "minimum": 0
+        },
+        "barRadius": {
+          "type": "number",
+          "description": "Border radius for categorical bars",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
