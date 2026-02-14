@@ -1,0 +1,75 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Simple 24h pulse and respiration trend",
+  "config": {
+    "margin": { "top": 20, "right": 40, "bottom": 70, "left": 40 },
+    "trackGaps": 16,
+    "axisGap": 10,
+    "style": {
+      "axis": {
+        "labelFontSize": 11,
+        "labelFontWeight": "bold",
+        "tickFontSize": 10,
+        "tickColor": "#555",
+        "domainColor": "#d9e2ec",
+        "gridColor": "#edf2f7"
+      },
+      "crosshair": {
+        "stroke": "#7a7a7a",
+        "strokeWidth": 1,
+        "strokeDasharray": "2,2"
+      },
+      "tooltip": {
+        "fontSize": 11,
+        "padding": 8,
+        "background": "rgba(30, 41, 59, 0.92)",
+        "textColor": "white",
+        "borderRadius": 4
+      }
+    }
+  },
+  "data": {
+    "generator": "time-series",
+    "hours": 24,
+    "startTime": "now"
+  },
+  "tracks": [
+    {
+      "weight": 1,
+      "title": "Pulse and Respiration",
+      "axes": [
+        {
+          "position": "left",
+          "domain": [10, 95],
+          "label": "Rate /min",
+          "ticks": 6
+        }
+      ],
+      "series": [
+        {
+          "type": "line",
+          "data": "respiration",
+          "axis": "left",
+          "color": "#2a9d8f",
+          "strokeWidth": 2,
+          "curve": "monotoneX",
+          "showPoints": true,
+          "pointStyle": {
+            "fill": "white",
+            "stroke": "#2a9d8f",
+            "strokeWidth": 2,
+            "radius": 3
+          }
+        },
+        {
+          "type": "point",
+          "data": "pulseOx",
+          "axis": "left",
+          "color": "#e76f51",
+          "symbol": "circle",
+          "hollow": false
+        }
+      ]
+    }
+  ]
+}

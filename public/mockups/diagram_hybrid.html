@@ -6,102 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hybrid Vega Lite Config + D3 Rendering Diagram</title>
     <script src="../js/lib/d3.v7.min.js"></script>
-    <style>
-        /* Layout and container styles */
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f0f0;
-        }
-
-        #test-container {
-            position: absolute;
-            top: 20px;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            border: 2px dashed #999;
-            background: white;
-            padding: 10px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            border-radius: 4px;
-        }
-
-        #test-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-
-        #chart-container {
-            flex-grow: 1;
-            position: relative;
-            min-height: 0;
-            width: 100%;
-        }
-
-        /* Tooltip styles - position and layout only, colors from config */
-        .tooltip {
-            position: absolute;
-            text-align: left;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            z-index: 20;
-            line-height: 1.4;
-        }
-
-        /* Crosshair - opacity and pointer events only, stroke from config */
-        .crosshair {
-            pointer-events: none;
-            opacity: 0;
-        }
-
-        /* Axis color classes for specific axes (kept for backwards compatibility) */
-        .axis.axis-blue text {
-            fill: #0077be;
-        }
-
-        .axis.axis-blue path,
-        .axis.axis-blue line {
-            stroke: #0077be;
-            opacity: 0.5;
-        }
-
-        .axis.axis-red text {
-            fill: #e63946;
-        }
-
-        .axis.axis-red path,
-        .axis.axis-red line {
-            stroke: #e63946;
-            opacity: 0.5;
-        }
-
-        .axis.axis-green text {
-            fill: #06a77d;
-        }
-
-        .axis.axis-green path,
-        .axis.axis-green line {
-            stroke: #06a77d;
-            opacity: 0.5;
-        }
-
-        /* Grid rendering */
-        .grid line {
-            shape-rendering: crispEdges;
-        }
-    </style>
+    <link rel="stylesheet" href="../styles/renderer.shared.css">
 </head>
 
 <body>
@@ -112,7 +17,7 @@
     </div>
     <div id="tooltip" class="tooltip"></div>
 
-    <script>
+    <script type="module">
         // ============================================================================
         // VEGA LITE-STYLE DECLARATIVE CONFIGURATION
         // ============================================================================
@@ -127,209 +32,70 @@
         //   - diastolic: [{ time: t1, value: 80 }, { time: t2, value: 85 }, ...]
         // This aligns better with standard visualization patterns and prepares for
         // openEHR OBSERVATION instances that can have multiple values at the same timepoint.
-        const spec = {
-            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-            "description": "Health metrics visualization with responsive design and Voronoi interactions",
-            "config": {
-                "margin": { "top": 20, "right": 40, "bottom": 70, "left": 40 },
-                "trackGaps": 20,
-                "axisGap": 10,
-                "style": {
-                    "axis": {
-                        "labelFontSize": 11,
-                        "labelFontWeight": "bold",
-                        "tickFontSize": 10,
-                        "tickColor": "#666",
-                        "domainColor": "#ddd",
-                        "gridColor": "#f5f5f5"
-                    },
-                    "legend": {
-                        "fontSize": 10,
-                        "textColor": "#555"
-                    },
-                    "crosshair": {
-                        "stroke": "#999",
-                        "strokeWidth": 1,
-                        "strokeDasharray": "4,2"
-                    },
-                    "tooltip": {
-                        "fontSize": 11,
-                        "padding": 8,
-                        "background": "rgba(0, 0, 0, 0.9)",
-                        "textColor": "white",
-                        "borderRadius": 4
-                    }
-                }
-            },
-            "data": {
-                "generator": "time-series",
-                "hours": 60,
-                "startTime": "now"
-            },
-            "tracks": [
-                {
-                    "weight": 0.7,
-                    "title": "Temperature",
-                    "axes": [
-                        {
-                            "position": "left",
-                            "domain": null,
-                            "label": "Temp °C",
-                            "color": "#e63946",
-                            "ticks": 5
-                        }
-                    ],
-                    "series": [
-                        {
-                            "type": "line",
-                            "data": "temp",
-                            "axis": "left",
-                            "color": "#e63946",
-                            "strokeWidth": 2,
-                            "curve": "monotoneX",
-                            "showPoints": true,
-                            "pointStyle": {
-                                "fill": "white",
-                                "stroke": "#e63946",
-                                "strokeWidth": 2,
-                                "radius": 3
-                            }
-                        }
-                    ]
-                },
-                {
-                    "weight": 1,
-                    "title": "Oxygenation & Respiration",
-                    "axes": [
-                        {
-                            "position": "left",
-                            "domain": [10, 30],
-                            "label": "Resp /min",
-                            "color": "#06a77d",
-                            "ticks": 5
-                        },
-                        {
-                            "position": "right",
-                            "domain": [80, 100],
-                            "label": "SpO2 %",
-                            "color": "#0077be",
-                            "ticks": 5
-                        }
-                    ],
-                    "series": [
-                        {
-                            "type": "line",
-                            "data": "respiration",
-                            "axis": "left",
-                            "color": "#06a77d",
-                            "strokeWidth": 2,
-                            "curve": "monotoneX",
-                            "showPoints": true,
-                            "pointStyle": {
-                                "fill": "white",
-                                "stroke": "#06a77d",
-                                "strokeWidth": 2,
-                                "radius": 3
-                            }
-                        },
-                        {
-                            "type": "line",
-                            "data": "spo2",
-                            "axis": "right",
-                            "color": "#0077be",
-                            "strokeWidth": 2,
-                            "strokeDasharray": "4,2",
-                            "curve": "monotoneX"
-                        }
-                    ]
-                },
-                {
-                    "weight": 2,
-                    "title": "Blood Pressure & Pulse",
-                    "axes": [
-                        {
-                            "position": "left",
-                            "domain": [40, 160],
-                            "label": "",
-                            "ticks": 6
-                        }
-                    ],
-                    "legend": {
-                        "items": [
-                            {"symbol": "v", "color": "#457b9d", "label": "Systolic"},
-                            {"symbol": "v-inv", "color": "#1d3557", "label": "Diastolic"},
-                            {"symbol": "circle", "color": "#e63946", "label": "Pulse (BP)"},
-                            {"symbol": "circle-filled", "color": "#e63946", "label": "Pulse (Oximeter)"}
-                        ]
-                    },
-                    "series": [
-                        {
-                            "type": "point",
-                            "data": "systolic",
-                            "axis": "left",
-                            "color": "#457b9d",
-                            "symbol": "v",
-                            "connectTo": "diastolic"
-                        },
-                        {
-                            "type": "point",
-                            "data": "diastolic",
-                            "axis": "left",
-                            "color": "#1d3557",
-                            "symbol": "v-inv"
-                        },
-                        {
-                            "type": "point",
-                            "data": "pulseBP",
-                            "axis": "left",
-                            "color": "#e63946",
-                            "symbol": "circle",
-                            "hollow": true
-                        },
-                        {
-                            "type": "point",
-                            "data": "pulseOx",
-                            "axis": "left",
-                            "color": "#e63946",
-                            "symbol": "circle",
-                            "hollow": false
-                        }
-                    ]
-                },
-                {
-                    "weight": 0.5,
-                    "title": "Wellbeing",
-                    "axes": [
-                        {
-                            "position": "left",
-                            "domain": [0.5, 5.5],
-                            "label": "Wellbeing",
-                            "ticks": [1, 2, 3, 4, 5],
-                            "gridLines": [0.5, 1.5, 2.5, 3.5, 4.5, 5.5]
-                        }
-                    ],
-                    "series": [
-                        {
-                            "type": "categorical",
-                            "data": "wellbeing",
-                            "axis": "left",
-                            "colorScale": {
-                                "domain": [1, 2, 3, 4, 5],
-                                "range": ["#d62828", "#f77f00", "#fcbf49", "#aacc00", "#2a9d8f"]
-                            },
-                            "barWidth": 12,
-                            "barRadius": 2
-                        }
-                    ]
-                }
-            ]
-        };
+        let spec;
+
+        let exampleGenerator;
+        try {
+            exampleGenerator = await import('../../src/lib/example-generator.js');
+        } catch (error) {
+            exampleGenerator = await import('../js/example-generator.js');
+        }
+
+        const { getExampleConfigs, initExample, validateExamples } = exampleGenerator;
+        const exampleConfigs = getExampleConfigs();
+        const query = new URLSearchParams(window.location.search);
+        const selectedExample = query.get('example');
+
+        const shouldRenderSingle = Boolean(selectedExample);
+
+        if (!shouldRenderSingle) {
+            const cards = Object.entries(exampleConfigs)
+                .map(([name, config]) => `
+                    <div class="example-card">
+                        <div class="example-title">${config.title}</div>
+                        <div class="chart-slot">
+                            <iframe src="diagram_hybrid.html?example=${name}" title="${config.title}"></iframe>
+                        </div>
+                    </div>`)
+                .join('');
+
+            document.body.innerHTML = `<div class="page"><div class="example-grid">${cards}</div></div>`;
+            await validateExamples();
+        }
+
+        if (shouldRenderSingle) {
+            spec = await initExample(selectedExample);
+            await validateExamples();
+        }
 
         // ============================================================================
         // DATA GENERATOR (from mockup)
         // ============================================================================
         function generateData(config) {
             const now = new Date();
+
+            if (config.data.generator === 'monthly-series') {
+                const months = config.data.months || 12;
+                const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+                const times = d3.range(months).map(i => new Date(start.getFullYear(), start.getMonth() + i, 1));
+
+                const adherence = times.map((time, index) => ({
+                    time,
+                    value: Math.max(60, Math.min(99, 72 + index * 1.2 + (Math.random() * 6 - 3))),
+                    unit: '%',
+                    type: 'Adherence'
+                }));
+
+                const visitCount = times.filter((_, index) => index % 2 === 0).map(time => ({
+                    time,
+                    value: 70 + Math.round(Math.random() * 18),
+                    unit: '%',
+                    type: 'Care visit month'
+                }));
+
+                return { adherence, visitCount, times };
+            }
+
             const hours = config.data.hours || 60;
             const times = d3.range(hours + 1).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
             const fewerTimes = d3.range(0, hours + 1, 4).map(i => new Date(now.getTime() - (hours - i) * 3600 * 1000));
@@ -834,16 +600,29 @@
             const axisY = currentY + axisGap;
             svg.append("line").attr("x1", 0).attr("y1", axisY).attr("x2", contentWidth).attr("y2", axisY).attr("stroke", "#ddd");
             const xAxisG = svg.append("g").attr("transform", `translate(0, ${axisY})`).attr("class", "axis");
-            const hourlyTicks = x.ticks(d3.timeHour.every(1));
+            const totalHours = (x.domain()[1] - x.domain()[0]) / (1000 * 60 * 60);
+            const tickInterval = totalHours > 24 * 90
+                ? d3.timeMonth.every(1)
+                : totalHours > 24 * 7
+                    ? d3.timeDay.every(1)
+                    : d3.timeHour.every(1);
+            const ticks = x.ticks(tickInterval);
 
-            const tg = xAxisG.selectAll(".tick-label").data(hourlyTicks).enter().append("g").attr("transform", d => `translate(${x(d)}, 0)`);
+            const tg = xAxisG.selectAll(".tick-label").data(ticks).enter().append("g").attr("transform", d => `translate(${x(d)}, 0)`);
             tg.append("line").attr("y1", 0).attr("y2", 5).attr("stroke", "#ddd");
-            
+
+            const tickLabelFormat = totalHours > 24 * 90
+                ? d3.timeFormat("%b %Y")
+                : totalHours > 24 * 7
+                    ? d3.timeFormat("%d %b")
+                    : d3.timeFormat("%H:%M");
+
             tg.each(function (d) {
-                if (d.getHours() % 3 === 0) {
+                const shouldLabel = totalHours > 24 * 7 ? true : d.getHours() % 3 === 0;
+                if (shouldLabel) {
                     d3.select(this).append("text")
                         .attr("text-anchor", "middle").attr("y", 15).attr("font-size", "10px").attr("fill", "#444")
-                        .text(d3.timeFormat("%H:%M")(d));
+                        .text(tickLabelFormat(d));
                 }
             });
 
@@ -946,16 +725,21 @@
         }
 
         // --- Resize Observer (from mockup) ---
-        const container = document.getElementById('chart-container');
-        const resizeObserver = new ResizeObserver(entries => {
-            for (let entry of entries) {
-                const { width, height } = entry.contentRect;
-                if (width > 0 && height > 0) {
-                    renderChart(width, height);
+        if (shouldRenderSingle) {
+            const container = document.getElementById('chart-container');
+            const title = document.getElementById('test-label');
+            title.textContent = `${exampleConfigs[selectedExample]?.title || selectedExample} (Resize Window to Test)`;
+
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    const { width, height } = entry.contentRect;
+                    if (width > 0 && height > 0) {
+                        renderChart(width, height);
+                    }
                 }
-            }
-        });
-        resizeObserver.observe(container);
+            });
+            resizeObserver.observe(container);
+        }
     </script>
 </body>
 </html>

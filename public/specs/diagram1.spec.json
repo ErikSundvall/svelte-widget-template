@@ -1,0 +1,197 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Health metrics visualization with responsive design and Voronoi interactions",
+  "config": {
+    "margin": { "top": 20, "right": 40, "bottom": 70, "left": 40 },
+    "trackGaps": 20,
+    "axisGap": 10,
+    "style": {
+      "axis": {
+        "labelFontSize": 11,
+        "labelFontWeight": "bold",
+        "tickFontSize": 10,
+        "tickColor": "#666",
+        "domainColor": "#ddd",
+        "gridColor": "#f5f5f5"
+      },
+      "legend": {
+        "fontSize": 10,
+        "textColor": "#555"
+      },
+      "crosshair": {
+        "stroke": "#999",
+        "strokeWidth": 1,
+        "strokeDasharray": "4,2"
+      },
+      "tooltip": {
+        "fontSize": 11,
+        "padding": 8,
+        "background": "rgba(0, 0, 0, 0.9)",
+        "textColor": "white",
+        "borderRadius": 4
+      }
+    }
+  },
+  "data": {
+    "generator": "time-series",
+    "hours": 60,
+    "startTime": "now"
+  },
+  "tracks": [
+    {
+      "weight": 0.7,
+      "title": "Temperature",
+      "axes": [
+        {
+          "position": "left",
+          "domain": null,
+          "label": "Temp °C",
+          "color": "#e63946",
+          "ticks": 5
+        }
+      ],
+      "series": [
+        {
+          "type": "line",
+          "data": "temp",
+          "axis": "left",
+          "color": "#e63946",
+          "strokeWidth": 2,
+          "curve": "monotoneX",
+          "showPoints": true,
+          "pointStyle": {
+            "fill": "white",
+            "stroke": "#e63946",
+            "strokeWidth": 2,
+            "radius": 3
+          }
+        }
+      ]
+    },
+    {
+      "weight": 1,
+      "title": "Oxygenation & Respiration",
+      "axes": [
+        {
+          "position": "left",
+          "domain": [10, 30],
+          "label": "Resp /min",
+          "color": "#06a77d",
+          "ticks": 5
+        },
+        {
+          "position": "right",
+          "domain": [80, 100],
+          "label": "SpO2 %",
+          "color": "#0077be",
+          "ticks": 5
+        }
+      ],
+      "series": [
+        {
+          "type": "line",
+          "data": "respiration",
+          "axis": "left",
+          "color": "#06a77d",
+          "strokeWidth": 2,
+          "curve": "monotoneX",
+          "showPoints": true,
+          "pointStyle": {
+            "fill": "white",
+            "stroke": "#06a77d",
+            "strokeWidth": 2,
+            "radius": 3
+          }
+        },
+        {
+          "type": "line",
+          "data": "spo2",
+          "axis": "right",
+          "color": "#0077be",
+          "strokeWidth": 2,
+          "strokeDasharray": "4,2",
+          "curve": "monotoneX"
+        }
+      ]
+    },
+    {
+      "weight": 2,
+      "title": "Blood Pressure & Pulse",
+      "axes": [
+        {
+          "position": "left",
+          "domain": [40, 160],
+          "label": "",
+          "ticks": 6
+        }
+      ],
+      "legend": {
+        "items": [
+          { "symbol": "v", "color": "#457b9d", "label": "Systolic" },
+          { "symbol": "v-inv", "color": "#1d3557", "label": "Diastolic" },
+          { "symbol": "circle", "color": "#e63946", "label": "Pulse (BP)" },
+          { "symbol": "circle-filled", "color": "#e63946", "label": "Pulse (Oximeter)" }
+        ]
+      },
+      "series": [
+        {
+          "type": "point",
+          "data": "systolic",
+          "axis": "left",
+          "color": "#457b9d",
+          "symbol": "v",
+          "connectTo": "diastolic"
+        },
+        {
+          "type": "point",
+          "data": "diastolic",
+          "axis": "left",
+          "color": "#1d3557",
+          "symbol": "v-inv"
+        },
+        {
+          "type": "point",
+          "data": "pulseBP",
+          "axis": "left",
+          "color": "#e63946",
+          "symbol": "circle",
+          "hollow": true
+        },
+        {
+          "type": "point",
+          "data": "pulseOx",
+          "axis": "left",
+          "color": "#e63946",
+          "symbol": "circle",
+          "hollow": false
+        }
+      ]
+    },
+    {
+      "weight": 0.5,
+      "title": "Wellbeing",
+      "axes": [
+        {
+          "position": "left",
+          "domain": [0.5, 5.5],
+          "label": "Wellbeing",
+          "ticks": [1, 2, 3, 4, 5],
+          "gridLines": [0.5, 1.5, 2.5, 3.5, 4.5, 5.5]
+        }
+      ],
+      "series": [
+        {
+          "type": "categorical",
+          "data": "wellbeing",
+          "axis": "left",
+          "colorScale": {
+            "domain": [1, 2, 3, 4, 5],
+            "range": ["#d62828", "#f77f00", "#fcbf49", "#aacc00", "#2a9d8f"]
+          },
+          "barWidth": 12,
+          "barRadius": 2
+        }
+      ]
+    }
+  ]
+}

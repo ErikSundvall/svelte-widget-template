@@ -1,0 +1,75 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "description": "Monthly long-term wellbeing trend",
+  "config": {
+    "margin": { "top": 20, "right": 40, "bottom": 70, "left": 40 },
+    "trackGaps": 16,
+    "axisGap": 10,
+    "style": {
+      "axis": {
+        "labelFontSize": 11,
+        "labelFontWeight": "bold",
+        "tickFontSize": 10,
+        "tickColor": "#444",
+        "domainColor": "#d5d8dc",
+        "gridColor": "#eef1f4"
+      },
+      "crosshair": {
+        "stroke": "#6b7280",
+        "strokeWidth": 1,
+        "strokeDasharray": "4,2"
+      },
+      "tooltip": {
+        "fontSize": 11,
+        "padding": 8,
+        "background": "rgba(17, 24, 39, 0.92)",
+        "textColor": "white",
+        "borderRadius": 4
+      }
+    }
+  },
+  "data": {
+    "generator": "monthly-series",
+    "months": 18,
+    "startTime": "now"
+  },
+  "tracks": [
+    {
+      "weight": 1,
+      "title": "Monthly care plan adherence",
+      "axes": [
+        {
+          "position": "left",
+          "domain": [55, 100],
+          "label": "Adherence %",
+          "ticks": 5
+        }
+      ],
+      "series": [
+        {
+          "type": "line",
+          "data": "adherence",
+          "axis": "left",
+          "color": "#3b82f6",
+          "strokeWidth": 2,
+          "curve": "monotoneX",
+          "showPoints": true,
+          "pointStyle": {
+            "fill": "white",
+            "stroke": "#3b82f6",
+            "strokeWidth": 2,
+            "radius": 3
+          }
+        },
+        {
+          "type": "point",
+          "data": "visitCount",
+          "axis": "left",
+          "color": "#1f2937",
+          "symbol": "circle",
+          "hollow": true
+        }
+      ]
+    }
+  ]
+}
