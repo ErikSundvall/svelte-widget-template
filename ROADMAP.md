@@ -1,11 +1,11 @@
 # Roadmap: Enhancing Renderer Reusability and Adding Multiple Diagram Examples
 
-This roadmap outlines steps to implement the plan described in https://github.com/ErikSundvall/svelte-widget-template/pull/2#issuecomment-3897132793. Goals: break out diagram-specific Vega-Lite specs and CSS from the shared renderer code/CSS; make the renderer configurable for multiple diagrams; add two more example specs+CSS; and extract the example generator into its own JS file.
+This roadmap outlines steps to implement the plan described in https://github.com/ErikSundvall/svelte-widget-template/pull/2#issuecomment-3897132793. Goals: break out diagram-specific Vega-Lite specs and diagram-specific CSS from the shared renderer code/CSS; make the renderer configurable for multiple diagrams; add two more example specs+CSS for some other healrcare related diagram; and extract the example generator into its own JS file.
 
 ## Objectives
 - Separate example-specific Vega-Lite specs and CSS from the renderer’s shared CSS and rendering code.
 - Ensure one configurable renderer can handle multiple diagrams.
-- Add and test two additional (simple) Vega-Lite examples with their own CSS.
+- Add and test two additional (simple) healtcare-related diagram examples using their own Vega-Lite configs and CSS. 
 - Extract the example generator into a separate JS file.
 
 ## Plan by Workstream
@@ -21,6 +21,7 @@ This roadmap outlines steps to implement the plan described in https://github.co
   - `public/specs/diagram2.spec.json` + `public/specs/diagram2.style.css`
   - `public/specs/diagram3.spec.json` + `public/specs/diagram3.style.css`
 - Keep the specs simple (e.g., basic bar chart and line chart) to validate the renderer pipeline.
+- Make at lest one example spanning long time (months) but low frequency - just a couple of values per month.
 - Ensure the renderer can switch between specs via configuration (no code changes needed per diagram).
 
 ### 3) Externalize the example generator
@@ -35,14 +36,14 @@ This roadmap outlines steps to implement the plan described in https://github.co
 - Update `public/mockups/diagram_hybrid.html` to:
   - Import shared renderer CSS.
   - Dynamically select/load `diagram1`, `diagram2`, or `diagram3` spec + CSS via the example generator.
-  - Show all three rendered outputs to demonstrate reuse.
+  - Be able to show all three rendered outputs to demonstrate reuse.
 
 ### 5) Testing & validation
 - For each of the three diagrams:
   - Verify shared CSS loads and spec-specific CSS overrides correctly.
   - Confirm the Vega-Lite spec renders without errors.
   - Sanity-check that toggling between diagrams does not require renderer code changes (only config/spec/CSS changes).
-- Optionally add a lightweight script to cycle through the three specs and log any render errors.
+- Add a lightweight test script to cycle through the three specs and log any render errors.
 
 ### 6) Documentation
 - Update `README.md` to explain:
