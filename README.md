@@ -20,12 +20,12 @@ npm run dev
 
 ## Hybrid mockup structure
 
-- Shared renderer styles: `/home/runner/work/svelte-widget-template/svelte-widget-template/public/styles/renderer.shared.css`
-- Per-diagram specs: `/home/runner/work/svelte-widget-template/svelte-widget-template/public/specs/diagram1|2|3.spec.json`
-- Per-diagram styles: `/home/runner/work/svelte-widget-template/svelte-widget-template/public/specs/diagram1|2|3.style.css`
-- Example generator module: `/home/runner/work/svelte-widget-template/svelte-widget-template/src/lib/example-generator.js`
+- Shared renderer styles: `public/styles/renderer.shared.css`
+- Per-diagram specs: `public/specs/diagram1|2|3.spec.json`
+- Per-diagram styles: `public/specs/diagram1|2|3.style.css`
+- Example generator module: `src/lib/example-generator.js`
 
-Open `/home/runner/work/svelte-widget-template/svelte-widget-template/public/mockups/diagram_hybrid.html`:
+Open `public/mockups/diagram_hybrid.html`:
 - No query string: overview showing all three diagram outputs.
 - `?example=diagram1|diagram2|diagram3`: render one diagram spec + style.
 

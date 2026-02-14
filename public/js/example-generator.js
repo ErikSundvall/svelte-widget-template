@@ -27,7 +27,7 @@ export async function loadSpec(name) {
   }
   const response = await fetch(example.specPath);
   if (!response.ok) {
-    throw new Error(`Failed to load spec ${example.specPath}`);
+    throw new Error(`Failed to load spec ${example.specPath}: ${response.status} ${response.statusText}`);
   }
   return response.json();
 }
@@ -58,12 +58,18 @@ export async function initExample(name) {
 export async function validateExamples() {
   const names = Object.keys(EXAMPLES);
   const results = await Promise.allSettled(names.map((name) => loadSpec(name)));
+  const summary = { ok: [], failed: [] };
+
   results.forEach((result, index) => {
     const name = names[index];
     if (result.status === 'fulfilled') {
+      summary.ok.push(name);
       console.info(`[example-validation] ${name}: ok`);
     } else {
+      summary.failed.push({ name, reason: result.reason });
       console.error(`[example-validation] ${name}: failed`, result.reason);
     }
   });
+
+  return summary;
 }

@@ -48,6 +48,11 @@
 
         const shouldRenderSingle = Boolean(selectedExample);
 
+        const hourlyTimeFormat = d3.timeFormat("%H:%M");
+        const dailyTimeFormat = d3.timeFormat("%d %b");
+        const monthlyTimeFormat = d3.timeFormat("%b %Y");
+
+
         if (!shouldRenderSingle) {
             const cards = Object.entries(exampleConfigs)
                 .map(([name, config]) => `
@@ -65,7 +70,6 @@
 
         if (shouldRenderSingle) {
             spec = await initExample(selectedExample);
-            await validateExamples();
         }
 
         // ============================================================================
@@ -600,10 +604,13 @@
             const axisY = currentY + axisGap;
             svg.append("line").attr("x1", 0).attr("y1", axisY).attr("x2", contentWidth).attr("y2", axisY).attr("stroke", "#ddd");
             const xAxisG = svg.append("g").attr("transform", `translate(0, ${axisY})`).attr("class", "axis");
+            const MONTHLY_THRESHOLD_HOURS = 24 * 90;
+            const DAILY_THRESHOLD_HOURS = 24 * 7;
+            const HOURLY_LABEL_INTERVAL = 3;
             const totalHours = (x.domain()[1] - x.domain()[0]) / (1000 * 60 * 60);
-            const tickInterval = totalHours > 24 * 90
+            const tickInterval = totalHours > MONTHLY_THRESHOLD_HOURS
                 ? d3.timeMonth.every(1)
-                : totalHours > 24 * 7
+                : totalHours > DAILY_THRESHOLD_HOURS
                     ? d3.timeDay.every(1)
                     : d3.timeHour.every(1);
             const ticks = x.ticks(tickInterval);
@@ -611,14 +618,14 @@
             const tg = xAxisG.selectAll(".tick-label").data(ticks).enter().append("g").attr("transform", d => `translate(${x(d)}, 0)`);
             tg.append("line").attr("y1", 0).attr("y2", 5).attr("stroke", "#ddd");
 
-            const tickLabelFormat = totalHours > 24 * 90
-                ? d3.timeFormat("%b %Y")
-                : totalHours > 24 * 7
-                    ? d3.timeFormat("%d %b")
-                    : d3.timeFormat("%H:%M");
+            const tickLabelFormat = totalHours > MONTHLY_THRESHOLD_HOURS
+                ? monthlyTimeFormat
+                : totalHours > DAILY_THRESHOLD_HOURS
+                    ? dailyTimeFormat
+                    : hourlyTimeFormat;
 
             tg.each(function (d) {
-                const shouldLabel = totalHours > 24 * 7 ? true : d.getHours() % 3 === 0;
+                const shouldLabel = totalHours > DAILY_THRESHOLD_HOURS ? true : d.getHours() % HOURLY_LABEL_INTERVAL === 0;
                 if (shouldLabel) {
                     d3.select(this).append("text")
                         .attr("text-anchor", "middle").attr("y", 15).attr("font-size", "10px").attr("fill", "#444")
