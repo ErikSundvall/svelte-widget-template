@@ -1,0 +1,79 @@
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f0f0;
+}
+
+.page {
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.example-card {
+  position: relative;
+  border: 2px dashed #999;
+  background: #fff;
+  padding: 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  min-height: 320px;
+}
+
+.example-title {
+  font-size: 13px;
+  color: #444;
+  margin-bottom: 6px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.chart-slot {
+  flex-grow: 1;
+  position: relative;
+  min-height: 0;
+  width: 100%;
+}
+
+.tooltip {
+  position: absolute;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 20;
+  line-height: 1.4;
+}
+
+.crosshair {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.axis.axis-blue text { fill: #0077be; }
+.axis.axis-blue path,
+.axis.axis-blue line { stroke: #0077be; opacity: 0.5; }
+
+.axis.axis-red text { fill: #e63946; }
+.axis.axis-red path,
+.axis.axis-red line { stroke: #e63946; opacity: 0.5; }
+
+.axis.axis-green text { fill: #06a77d; }
+.axis.axis-green path,
+.axis.axis-green line { stroke: #06a77d; opacity: 0.5; }
+
+.grid line {
+  shape-rendering: crispEdges;
+}
