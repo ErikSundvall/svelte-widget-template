@@ -15,5 +15,25 @@ npm run build
 To run the svelte widgets in a local web server run:
 
 npm run dev 
-
+ 
 ...and then use a web browser to open whatever address the local server says it is running on, e.g. http://localhost:5173
+
+## Hybrid mockup structure
+
+- Shared renderer styles: `public/styles/renderer.shared.css`
+- Per-diagram specs: `public/specs/diagram1|2|3.spec.json`
+- Per-diagram styles: `public/specs/diagram1|2|3.style.css`
+- Example generator module: `src/lib/example-generator.js`
+
+Open `public/mockups/diagram_hybrid.html`:
+- No query string: overview showing all three diagram outputs.
+- `?example=diagram1|diagram2|diagram3`: render one diagram spec + style.
+
+Note: these spec files are a **hybrid format** interpreted by `diagram_hybrid.html`.  
+They are Vega Lite-inspired, but include custom fields such as `data.generator`,
+`tracks`, and `config.style` that are not strict Vega-Lite schema properties.
+
+To add a new diagram:
+1. Add `public/specs/<name>.spec.json`.
+2. Add `public/specs/<name>.style.css`.
+3. Register paths/title in `src/lib/example-generator.js`.
