@@ -29,6 +29,10 @@ Open `public/mockups/diagram_hybrid.html`:
 - No query string: overview showing all three diagram outputs.
 - `?example=diagram1|diagram2|diagram3`: render one diagram spec + style.
 
+Note: these spec files are a **hybrid format** interpreted by `diagram_hybrid.html`.  
+They are Vega Lite-inspired, but include custom fields such as `data.generator`,
+`tracks`, and `config.style` that are not strict Vega-Lite schema properties.
+
 To add a new diagram:
 1. Add `public/specs/<name>.spec.json`.
 2. Add `public/specs/<name>.style.css`.
