@@ -1,3 +1,6 @@
+Some additional experiments not yet folded into Better-compatible components are found in the /public/mockups directory and viewable using links like https://raw.githack.com/ErikSundvall/svelte-widget-template/refs/heads/master/public/mockups/diagram_mockup.html
+
+Original readme:
 # Svelte marketplace template   
 
 template for creating a widget in Svelte framework
